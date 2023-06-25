@@ -1,6 +1,142 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <meta charset="UTF-8">
+    <title>Zank613 GitHub Page</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: #0B0C10;
+            color: #fff;
+            font-family: 'Roboto', sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        header {
+            background-color: #1F2833;
+            padding: 20px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        header:after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url('https://images.unsplash.com/photo-1508697014387-db70aad34f4d?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=764&q=80');
+            background-repeat: no-repeat;
+            background-position: center center;
+            background-size: cover;
+            z-index: 1;
+            opacity: 0.3;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 3em;
+            z-index: 2;
+            position: relative;
+        }
+
+        nav {
+            background-color: #1F2833;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            padding: 20px;
+        }
+
+        nav a {
+            color: #fff;
+            text-decoration: none;
+            font-size: 1.5em;
+            margin: 0 10px;
+            transition: color 0.3s ease-in-out;
+        }
+
+        nav a:hover {
+            color: #66FCF1;
+        }
+
+        main {
+            padding: 50px;
+            flex: 1;
+        }
+
+        section {
+            margin-bottom: 50px;
+        }
+
+        section h2 {
+            font-size: 2em;
+            margin-bottom: 10px;
+            animation: slide-in-blurred-left 0.6s cubic-bezier(0.23, 1, 0.32, 1) both;
+        }
+
+        @keyframes slide-in-blurred-left {
+            0% {
+                transform: translateX(-1000px) scaleX(2.5) scaleY(0.2);
+                transform-origin: 100% 50%;
+                filter: blur(40px);
+                opacity: 0;
+            }
+            100% {
+                transform: translateX(0) scaleY(1) scaleX(1);
+                transform-origin: 50% 50%;
+                filter: blur(0);
+                opacity: 1;
+            }
+        }
+
+        section p {
+            font-size: 1.2em;
+            line-height: 1.5;
+            animation: slide-in-blurred-bottom 0.6s cubic-bezier(0.23, 1, 0.32, 1) 0.5s both;
+        }
+
+        @keyframes slide-in-blurred-bottom {
+            0% {
+                transform: translateY(1000px) scaleY(2.5) scaleX(0.2);
+                transform-origin: 50% 100%;
+                filter: blur(40px);
+                opacity: 0;
+            }
+            100% {
+                transform: translateY(0) scaleY(1) scaleX(1);
+                transform-origin: 50% 50%;
+                filter: blur(0);
+                opacity: 1;
+            }
+        }
+
+        footer {
+            background-color: #1F2833;
+            padding: 20px;
+            text-align: center;
+        }
+
+        footer p {
+            margin: 0;
+            font-size: 1.2em;
+        }
+    </style>
+</head>
+<body>
+    <!DOCTYPE html>
+<html lang="en">
+<head>
 	<meta charset="UTF-8">
 	<title>Zank613 GitHub Page</title>
 	<style>
@@ -125,5 +261,7 @@
 <footer>
 	<p>Copyright © 2023 ATAERK YILDIRIM</p>
 </footer>
+</body>
+</html>
 </body>
 </html>
