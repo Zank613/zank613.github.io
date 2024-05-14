@@ -1,10 +1,18 @@
 body {
     font-family: Arial, sans-serif;
-    background-color: #1a1a1a;
-    color: #f0f0f0;
     margin: 0;
     padding: 0;
     overflow-x: hidden; /* Prevent horizontal overflow */
+}
+
+body.dark-mode {
+    background-color: #1a1a1a;
+    color: #f0f0f0;
+}
+
+body.light-mode {
+    background-color: #ffffff;
+    color: #000000;
 }
 
 nav ul {
@@ -13,6 +21,9 @@ nav ul {
     background-color: #333;
     text-align: center;
     margin: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
 nav ul li {
@@ -23,6 +34,10 @@ nav ul li {
 nav ul li a {
     text-decoration: none;
     color: #f0f0f0;
+}
+
+.theme-toggle {
+    margin-left: auto;
 }
 
 header {
@@ -51,6 +66,11 @@ section {
     overflow: hidden; /* Prevent content overflow */
 }
 
+body.light-mode .project, body.light-mode .log {
+    background-color: #f0f0f0;
+    color: #000000;
+}
+
 .project:hover, .log:hover {
     transform: scale(1.02); /* Slightly increase size on hover */
 }
@@ -61,10 +81,19 @@ footer {
     background-color: #333;
 }
 
+body.light-mode footer {
+    background-color: #f0f0f0;
+    color: #000000;
+}
+
 /* Highlight the active navigation link */
 nav ul li a.active {
     font-weight: bold;
     color: #00ff00; /* Bright green for the active link */
+}
+
+body.light-mode nav ul li a.active {
+    color: #007700; /* Darker green for light mode */
 }
 
 /* Cursor pointer for expandable sections */
