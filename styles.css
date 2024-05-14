@@ -4,6 +4,7 @@ body {
     color: #f0f0f0;
     margin: 0;
     padding: 0;
+    overflow-x: hidden; /* Prevent horizontal overflow */
 }
 
 nav ul {
@@ -11,6 +12,7 @@ nav ul {
     padding: 0;
     background-color: #333;
     text-align: center;
+    margin: 0;
 }
 
 nav ul li {
@@ -30,6 +32,8 @@ header {
 
 main {
     padding: 20px;
+    max-width: 1000px; /* Restrict the main content width */
+    margin: 0 auto; /* Center the main content */
 }
 
 section {
@@ -42,6 +46,8 @@ section {
     margin: 10px 0;
     border-radius: 8px;
     transition: transform 0.3s;
+    max-width: 100%; /* Ensure the section does not exceed the screen width */
+    box-sizing: border-box; /* Include padding and border in the element's total width and height */
 }
 
 .project:hover, .log:hover {
