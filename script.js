@@ -11,10 +11,11 @@ document.addEventListener('DOMContentLoaded', () =>
     });
 });
 
-// Expand/Collapse project and log details
+// Expand/Collapse project and log details, allowing only one to be open at a time
 document.addEventListener('DOMContentLoaded', () => 
 {
     const expandableSections = document.querySelectorAll('.project, .log');
+    
     expandableSections.forEach(section => 
     {
         const title = section.querySelector('h3');
@@ -23,6 +24,16 @@ document.addEventListener('DOMContentLoaded', () =>
 
         title.addEventListener('click', () => 
         {
+            // Collapse any currently open sections
+            expandableSections.forEach(sec => 
+            {
+                if (sec !== section) 
+                {
+                    sec.querySelector('p').style.display = 'none';
+                }
+            });
+
+            // Toggle the clicked section
             if (details.style.display === 'none') 
             {
                 details.style.display = 'block';
