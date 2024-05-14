@@ -48,10 +48,11 @@ section {
     transition: transform 0.3s;
     max-width: 100%; /* Ensure the section does not exceed the screen width */
     box-sizing: border-box; /* Include padding and border in the element's total width and height */
+    overflow: hidden; /* Prevent content overflow */
 }
 
 .project:hover, .log:hover {
-    transform: scale(1.05);
+    transform: scale(1.02); /* Slightly increase size on hover */
 }
 
 footer {
