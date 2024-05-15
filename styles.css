@@ -105,3 +105,26 @@ body.light-mode nav ul li a.active {
 .project p, .log p {
     transition: all 0.3s ease-in-out;
 }
+
+/* Links section styling */
+#links {
+    text-align: center;
+}
+
+#links h2 {
+    margin-bottom: 20px;
+}
+
+#links p {
+    margin: 10px 0;
+}
+
+#links a {
+    color: #00ff00;
+    text-decoration: none;
+    font-weight: bold;
+}
+
+#links a:hover {
+    text-decoration: underline;
+}
