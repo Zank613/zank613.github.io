@@ -1,5 +1,5 @@
-title: depo of random bits
-description: meh programmer's mindspace
+title: zank613 mind-depo
+description: a meh programmer's mindspace
 author:
   name: Zank613
   email: nomail@.com
@@ -27,3 +27,8 @@ minima:
       url: "/blog.html"
     - title: "Projects"
       url: "/projects.html"
+
+
+collections:
+  projects:
+    output: true
