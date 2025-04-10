@@ -6,3 +6,18 @@ theme: minima
 # Optional extras
 markdown: kramdown
 highlighter: rouge
+
+# In _config.yml
+show_excerpts: true
+
+minima:
+  social_links:
+    github: yourusername
+    rss: true
+
+  # Optional: Custom nav items
+  navigation:
+    - title: "Home"
+      url: "/"
+    - title: "Blog"
+      url: "/blog.html"
