@@ -1,0 +1,8 @@
+title: My Cool Blog
+description: meh programmer's mindspace
+author: Ataerk
+theme: minima
+
+# Optional extras
+markdown: kramdown
+highlighter: rouge
