@@ -1,19 +1,27 @@
-title: My Cool Blog
+title: depo of random bits
 description: meh programmer's mindspace
-author: Ataerk
+author:
+  name: "Zank613"
+  email: "nomail@.com"
 theme: minima
 
 # Optional extras
 markdown: kramdown
 highlighter: rouge
 
-# In _config.yml
-show_excerpts: true
+plugins:
+  - jekyll-feed
+  - jekyll-seo-tag
 
 minima:
   social_links:
-    github: yourusername
-    rss: true
+    - title: GitHub
+      icon: github
+      url: "https://github.com/Zank613?tab=repositories"
+
+  skin: dark
+
+  show_excerpts: true
 
   # Optional: Custom nav items
   navigation:
@@ -21,3 +29,5 @@ minima:
       url: "/"
     - title: "Blog"
       url: "/blog.html"
+    - title: "Projects"
+      url: "/projects.html"
