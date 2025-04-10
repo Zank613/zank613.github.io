@@ -1,8 +1,8 @@
 title: depo of random bits
 description: meh programmer's mindspace
 author:
-  name: "Zank613"
-  email: "nomail@.com"
+  name: Zank613
+  email: nomail@.com
 theme: minima
 
 # Optional extras
@@ -14,16 +14,12 @@ plugins:
   - jekyll-seo-tag
 
 minima:
-  social_links:
-    - title: GitHub
-      icon: github
-      url: "https://github.com/Zank613?tab=repositories"
-
   skin: dark
-
   show_excerpts: true
 
-  # Optional: Custom nav items
+  social_links:
+    github: Zank613
+
   navigation:
     - title: "Home"
       url: "/"
