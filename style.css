@@ -1,0 +1,111 @@
+/* ===== Base ===== */
+body {
+    background: #f8f7f3;
+    font-family: "Courier New", monospace;
+    margin: 0;
+    padding: 0;
+    line-height: 1.6;
+}
+
+.container {
+    max-width: 750px;
+    margin: 40px auto;
+    padding: 0 16px;
+}
+
+/* ===== Navigation ===== */
+nav {
+    text-align: center;
+    margin-bottom: 25px;
+}
+
+nav a {
+    margin: 0 15px;
+    text-decoration: none;
+    font-weight: bold;
+    color: black;
+}
+
+nav a:hover {
+    text-decoration: underline;
+}
+
+/* ===== Basic Text ===== */
+h1, h2, h3 {
+    font-weight: bold;
+}
+
+a {
+    color: #0000aa;
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+hr {
+    border: none;
+    border-top: 1px solid #000;
+    margin: 30px 0;
+}
+
+/* ===== Post Elements ===== */
+.date {
+    color: #444;
+    font-size: 14px;
+    margin-bottom: 20px;
+}
+
+/* ===== Code Blocks ===== */
+pre {
+    background: #eee;
+    padding: 10px;
+    overflow-x: auto;
+    border: 1px solid #ccc;
+}
+
+code {
+    font-family: "Courier New", monospace;
+}
+
+/* ===== Resume Sections ===== */
+.section-title {
+    margin-top: 20px;
+    font-size: 20px;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+.item-title {
+    font-weight: bold;
+}
+
+/* ====== Mobile tweaks ====== */
+@media (max-width: 600px) {
+    .container {
+        margin: 20px auto;
+        padding: 0 10px;
+    }
+
+    body {
+        font-size: 14px;
+    }
+
+    nav {
+        margin-bottom: 15px;
+    }
+
+    nav a {
+        display: inline-block;
+        margin: 4px 8px;
+    }
+
+    h1 {
+        font-size: 22px;
+    }
+
+    h2 {
+        font-size: 18px;
+    }
+}

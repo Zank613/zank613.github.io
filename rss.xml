@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+    <channel>
+
+        <!-- Basic site metadata -->
+        <title>Ataerk.dev</title>
+        <link>https://ataerk.dev</link>
+        <description>Personal website and technical notes by Ataerk</description>
+        <language>en-us</language>
+        <lastBuildDate>Thu, 20 Nov 2025 12:00:00 GMT</lastBuildDate>
+
+
+        <item>
+            <title>Example</title>
+            <link>https://ataerk.dev/post1.html</link>
+            <guid>https://ataerk.dev/post1.html</guid>
+            <pubDate>Thu, 20 Nov 2025 12:00:00 GMT</pubDate>
+            <description>Example</description>
+        </item>
+
+    </channel>
+</rss>
