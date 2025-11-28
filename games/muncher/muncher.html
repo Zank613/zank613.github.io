@@ -19,8 +19,23 @@
     <h1>Ghost Muncher</h1>
     <p>Prototype Pac-Man style game written in JavaScript + Canvas.</p>
 
-    <canvas id="gameCanvas" width="800" height="600"
-            style="border:1px solid #333; display:block; margin:1rem auto;"></canvas>
+    <div class="game-area">
+        <canvas id="gameCanvas" width="800" height="600"
+                style="border:1px solid #333; display:block; margin:1rem auto;"></canvas>
+
+        <!-- Touch controls (shown on mobile via CSS) -->
+        <div class="touch-controls">
+            <div class="touch-row">
+                <button id="btnUp" class="touch-btn">▲</button>
+            </div>
+            <div class="touch-row">
+                <button id="btnLeft" class="touch-btn">◀</button>
+                <button id="btnDown" class="touch-btn">▼</button>
+                <button id="btnRight" class="touch-btn">▶</button>
+            </div>
+        </div>
+    </div>
+
 </div>
 
 <script src="main.js"></script>

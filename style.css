@@ -108,4 +108,49 @@ code {
     h2 {
         font-size: 18px;
     }
+
+
+    /* ===== Touch controls (mobile) ===== */
+
+    .game-area {
+        text-align: center;
+    }
+
+    /* Hidden by default (desktop) */
+    .touch-controls {
+        display: none;
+    }
+
+    @media (max-width: 900px) {
+        #gameCanvas {
+            max-width: 100%;
+            height: auto;
+        }
+
+        .touch-controls {
+            display: inline-block;
+            margin-top: 16px;
+            user-select: none;
+        }
+
+        .touch-row {
+            text-align: center;
+            margin: 4px 0;
+        }
+
+        .touch-btn {
+            width: 56px;
+            height: 56px;
+            margin: 0 6px;
+            font-size: 22px;
+            border-radius: 8px;
+            border: 1px solid #000;
+            background: #f0efea;
+            cursor: pointer;
+        }
+
+        .touch-btn:active {
+            background: #ddd;
+        }
+    }
 }
