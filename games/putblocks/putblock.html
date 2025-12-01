@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Putblocks</title>
+    <link rel="stylesheet" href="../../style.css">
+</head>
+<body>
+<div class="container">
+
+    <nav>
+        <a href="../../index.html">HOME</a>
+        <a href="../../resume.html">RESUME</a>
+        <a href="../../rss.xml">RSS</a>
+        <a href="../../games.html">GAMES</a>
+    </nav>
+
+    <h1>Tetris Clone</h1>
+    <p>Left / Right: Move • Up: Rotate • Down: Soft drop • Space: Hard drop</p>
+
+    <canvas id="tetrisCanvas" width="300" height="600"
+            style="border:1px solid #333; display:block; margin:1rem auto;"></canvas>
+
+    <div style="text-align:center; margin-bottom: 2rem;">
+        <div>Score: <span id="score">0</span></div>
+        <div>Lines: <span id="lines">0</span></div>
+        <div>Level: <span id="level">1</span></div>
+        <div id="status"></div>
+    </div>
+
+</div>
+
+<script src="putblock.js"></script>
+</body>
+</html>
