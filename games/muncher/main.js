@@ -32,7 +32,6 @@ const ctx = canvas.getContext("2d");
 
 const TILE_SIZE = 32;
 
-
 const TARGET_FPS = 60;
 const FRAME_DURATION = 1000 / TARGET_FPS; // ~16.67 ms per frame
 
@@ -61,26 +60,26 @@ const LEVEL_1 = [
     [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
 ];
 
-// Bigger second level (19x19)
+// NEW Level 2
 const LEVEL_2 = [
     [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
-    [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-    [1,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,1],
-    [1,0,0,1,0,0,0,0,0,0,0,1,0,0,0,1,0,0,1],
+    [1,0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,1],
+    [1,0,1,1,0,1,0,1,1,0,1,1,0,1,0,1,1,0,1],
+    [1,0,1,0,0,0,0,1,0,0,0,1,0,0,0,0,1,0,1],
+    [1,0,1,0,1,1,0,1,0,1,0,1,0,1,1,0,1,0,1],
+    [1,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,1],
+    [1,0,1,0,1,1,0,1,1,1,1,1,0,1,1,0,1,0,1],
+    [1,0,1,0,0,0,0,1,0,0,0,1,0,0,0,0,1,0,1],
     [1,0,1,1,1,0,1,1,1,0,1,1,1,0,1,1,1,0,1],
-    [1,0,0,0,0,0,0,1,0,0,0,1,0,0,0,1,0,0,1],
-    [1,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,1],
-    [1,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,1],
-    [1,0,1,1,0,1,1,1,1,0,1,1,1,1,0,1,1,0,1],
-    [1,0,0,1,0,0,0,1,0,0,0,1,0,0,0,0,0,0,1],
-    [1,0,0,0,0,0,0,1,0,0,0,1,0,0,0,1,0,0,1],
-    [1,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,1],
+    [1,0,0,0,1,0,0,0,0,0,0,0,0,0,1,0,0,0,1],
+    [1,0,1,0,1,1,0,1,1,1,1,1,0,1,1,0,1,0,1],
+    [1,0,1,0,0,0,0,1,0,0,0,1,0,0,0,0,1,0,1],
     [1,0,1,1,1,0,1,1,1,0,1,1,1,0,1,1,1,0,1],
-    [1,0,0,1,0,0,0,1,0,0,0,1,0,0,0,0,0,0,1],
-    [1,0,0,0,0,0,0,1,0,0,0,1,0,0,0,1,0,0,1],
-    [1,0,0,1,0,0,0,1,0,0,0,0,0,0,0,1,0,0,1],
-    [1,0,0,1,0,0,0,0,0,0,0,1,0,0,0,1,0,0,1],
-    [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+    [1,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,1],
+    [1,0,1,0,1,1,0,1,0,1,0,1,0,1,1,0,1,0,1],
+    [1,0,1,0,0,0,0,1,0,0,0,1,0,0,0,0,1,0,1],
+    [1,0,1,1,0,1,0,1,1,0,1,1,0,1,0,1,1,0,1],
+    [1,0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,1],
     [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
 ];
 
@@ -89,21 +88,21 @@ const LEVELS = [LEVEL_1, LEVEL_2];
 // Per-level start positions
 const PLAYER_STARTS = [
     { x: 1, y: 7 },   // Level 1
-    { x: 9, y: 17 }   // Level 2
+    { x: 9, y: 17 }   // Level 2 (bottom center-ish)
 ];
 
 const RED_GHOST_STARTS = [
     { x: 13, y: 7 },  // Level 1
-    { x: 9,  y: 9 }   // Level 2
+    { x: 9,  y: 9 }   // Level 2 (central-ish)
 ];
 
-// Yellow only appears on level 2
-const YELLOW_GHOST_STARTS = [
-    null,              // Level 1: no yellow
-    { x: 9, y: 1 }     // Level 2
+// Pink ghost (was "yellow")
+const PINK_GHOST_STARTS = [
+    null,              // Level 1: no pink
+    { x: 9, y: 1 }     // Level 2 (top center)
 ];
 
-// 4 far-corner power pellets per level
+// 4 far-ish power pellets per level
 const POWER_PELLET_POSITIONS = [
     // Level 1 (15x15)
     [
@@ -153,6 +152,87 @@ function isWalkable(tileX, tileY) {
         return false;
     }
     return level[tileY][tileX] !== 1;
+}
+
+// Breadth-first search to find the next step from (sx,sy) towards (tx,ty)
+function bfsNextStep(sx, sy, tx, ty) {
+    if (sx === tx && sy === ty) {
+        return null;
+    }
+
+    const queue = [];
+    const visited = Array.from({ length: TILES_Y }, () =>
+        Array(TILES_X).fill(false)
+    );
+    const parent = Array.from({ length: TILES_Y }, () =>
+        Array(TILES_X).fill(null)
+    );
+
+    if (!isWalkable(sx, sy)) return null;
+
+    queue.push({ x: sx, y: sy });
+    visited[sy][sx] = true;
+
+    const dirs = [
+        { dx: 0, dy: -1 },
+        { dx: 0, dy: 1 },
+        { dx: -1, dy: 0 },
+        { dx: 1, dy: 0 }
+    ];
+
+    let found = false;
+
+    while (queue.length > 0) {
+        const { x, y } = queue.shift();
+        if (x === tx && y === ty) {
+            found = true;
+            break;
+        }
+
+        for (const d of dirs) {
+            const nx = x + d.dx;
+            const ny = y + d.dy;
+
+            if (
+                ny < 0 || ny >= TILES_Y ||
+                nx < 0 || nx >= TILES_X ||
+                visited[ny][nx] ||
+                !isWalkable(nx, ny)
+            ) {
+                continue;
+            }
+
+            visited[ny][nx] = true;
+            parent[ny][nx] = { x, y };
+            queue.push({ x: nx, y: ny });
+        }
+    }
+
+    if (!found || !visited[ty][tx]) {
+        return null; // no path
+    }
+
+    // Backtrack from target to start
+    let cx = tx;
+    let cy = ty;
+    let prev = parent[cy][cx];
+
+    while (prev && !(prev.x === sx && prev.y === sy)) {
+        cx = prev.x;
+        cy = prev.y;
+        prev = parent[cy][cx];
+    }
+
+    const dx = cx - sx;
+    const dy = cy - sy;
+    if (dx === 0 && dy === 0) {
+        return null;
+    }
+    return { dx, dy };
+}
+
+function manhattan(ax, ay, bx, by) {
+    return Math.abs(ax - bx) + Math.abs(ay - by);
 }
 
 function initPellets(playerStart, ghostStarts) {
@@ -320,23 +400,23 @@ class Player {
 
 
 // ===== Ghost =====
-// Red: chases current player position
-// Yellow: tries to go ahead of the player
-// All ghosts slow down when turning corners.
-// In power mode, ghosts run away & turn blue.
+// Red: BFS chase to player tile.
+// Pink: BFS chase to a point ahead of the player (trap from front).
+// In power mode, they run towards far corners away from the player.
 
 class Ghost {
     constructor(tileX, tileY, options = {}) {
         this.spawnX = tileX;
         this.spawnY = tileY;
 
-        this.name  = options.name  || "Ghost";
-        this.color = options.color || "red";
+        this.name      = options.name  || "Ghost";
+        this.baseColor = options.color || "red";
 
-        // Slightly faster than player (0.15) on straights,
-        // slower on turns so corners give the player an edge.
-        this.straightSpeed = options.straightSpeed ?? 0.16;
-        this.turnSpeed     = options.turnSpeed     ?? 0.09;
+        // BFS-driven; speed is interpolation between tiles.
+        this.straightSpeed = options.straightSpeed ?? 0.17;
+        this.turnSpeed     = options.turnSpeed     ?? 0.12;
+
+        this.behavior = options.behavior || "chase"; // "chase" or "front"
 
         this.isFrightened = false;
         this.isActive = true;
@@ -363,17 +443,100 @@ class Ghost {
 
     setFrightened(on) {
         this.isFrightened = on;
+        // Slight speed reduction in frightened mode so player can catch them
+        if (on) {
+            this.currentSpeed = this.turnSpeed * 0.8;
+        } else {
+            this.currentSpeed = this.straightSpeed;
+        }
     }
 
-    chooseDirectionToward(targetX, targetY) {
-        const dirs = [
-            { dx: 0,  dy: -1 }, // up
-            { dx: 0,  dy: 1 },  // down
-            { dx: -1, dy: 0 },  // left
-            { dx: 1,  dy: 0 }   // right
+    // Corner-style scatter targets (per level, per ghost)
+    getScatterTargets() {
+        const corners = [
+            { x: 1,            y: 1 },
+            { x: TILES_X - 2,  y: 1 },
+            { x: 1,            y: TILES_Y - 2 },
+            { x: TILES_X - 2,  y: TILES_Y - 2 }
         ];
 
-        const pickDirection = (allowReverse) => {
+        // You can customise per ghost here if you want
+        if (this.name === "Red") {
+            // Prefers top-right / bottom-right
+            return [corners[1], corners[3]];
+        }
+        if (this.name === "Pink") {
+            // Prefers top-left / bottom-left
+            return [corners[0], corners[2]];
+        }
+        return corners;
+    }
+
+    // Compute the actual target tile based on behavior and power mode
+    computeTarget(player) {
+        // Normal (non-frightened) mode
+        if (!this.isFrightened) {
+            let tx = player.tileX;
+            let ty = player.tileY;
+
+            if (this.behavior === "front") {
+                // Pink ghost: aim a few tiles ahead of player direction
+                const lookAhead = 4;
+                if (player.dirX !== 0 || player.dirY !== 0) {
+                    tx = player.tileX;
+                    ty = player.tileY;
+                    for (let i = 0; i < lookAhead; i++) {
+                        const nx = tx + player.dirX;
+                        const ny = ty + player.dirY;
+                        if (!isWalkable(nx, ny)) break;
+                        tx = nx;
+                        ty = ny;
+                    }
+                }
+            }
+
+            return { tx, ty };
+        }
+
+        // Frightened mode: run to a far corner away from the player
+        const candidates = this.getScatterTargets().filter(pos =>
+            isWalkable(pos.x, pos.y)
+        );
+
+        // If somehow no corner is walkable (unlikely), just flee locally
+        if (candidates.length === 0) {
+            return { tx: this.tileX, ty: this.tileY };
+        }
+
+        let best = candidates[0];
+        let bestDist = manhattan(best.x, best.y, player.tileX, player.tileY);
+
+        for (const pos of candidates) {
+            const d = manhattan(pos.x, pos.y, player.tileX, player.tileY);
+            if (d > bestDist) {
+                bestDist = d;
+                best = pos;
+            }
+        }
+
+        return { tx: best.x, ty: best.y };
+    }
+
+    chooseDirection(player) {
+        const { tx, ty } = this.computeTarget(player);
+
+        // First try BFS path to chosen target
+        let step = bfsNextStep(this.tileX, this.tileY, tx, ty);
+
+        // If BFS fails (no path), fall back to local decision so we never freeze
+        if (!step) {
+            const dirs = [
+                { dx: 0,  dy: -1 },
+                { dx: 0,  dy: 1 },
+                { dx: -1, dy: 0 },
+                { dx: 1,  dy: 0 }
+            ];
+
             let bestDir = null;
             let bestMetric = this.isFrightened ? -Infinity : Infinity;
 
@@ -383,22 +546,16 @@ class Ghost {
 
                 if (!isWalkable(nx, ny)) continue;
 
-                const isReverse =
-                    (this.dirX === -d.dx && this.dirY === -d.dy &&
-                        (this.dirX !== 0 || this.dirY !== 0));
-
-                if (!allowReverse && isReverse) {
-                    continue;
-                }
-
-                const dist = Math.abs(nx - targetX) + Math.abs(ny - targetY);
+                const dist = manhattan(nx, ny, player.tileX, player.tileY);
 
                 if (!this.isFrightened) {
+                    // chase: minimise distance
                     if (dist < bestMetric) {
                         bestMetric = dist;
                         bestDir = d;
                     }
                 } else {
+                    // flee: maximise distance
                     if (dist > bestMetric) {
                         bestMetric = dist;
                         bestDir = d;
@@ -406,25 +563,18 @@ class Ghost {
                 }
             }
 
-            return bestDir;
-        };
+            if (!bestDir) {
+                this.isMoving = false;
+                return;
+            }
 
-        // 1) Try not reversing
-        let chosen = pickDirection(false);
-        // 2) If dead end, allow reversal
-        if (!chosen) {
-            chosen = pickDirection(true);
+            step = bestDir;
         }
 
-        if (!chosen) {
-            this.isMoving = false;
-            return;
-        }
+        const turning = (step.dx !== this.dirX || step.dy !== this.dirY);
 
-        const turning = (chosen.dx !== this.dirX || chosen.dy !== this.dirY);
-
-        this.dirX = chosen.dx;
-        this.dirY = chosen.dy;
+        this.dirX = step.dx;
+        this.dirY = step.dy;
 
         this.startTileX = this.tileX;
         this.startTileY = this.tileY;
@@ -433,15 +583,18 @@ class Ghost {
         this.progress = 0;
         this.isMoving = true;
 
-        // Cornering penalty: slower on turns
+        // Slightly slower on turns to give the player some corner advantage
         this.currentSpeed = turning ? this.turnSpeed : this.straightSpeed;
+        if (this.isFrightened) {
+            this.currentSpeed *= 0.8; // always a bit slower when scared
+        }
     }
 
-    update(targetX, targetY) {
+    update(player) {
         if (!this.isActive) return;
 
         if (!this.isMoving) {
-            this.chooseDirectionToward(targetX, targetY);
+            this.chooseDirection(player);
             return;
         }
 
@@ -469,7 +622,7 @@ class Ghost {
         const px = interpX * TILE_SIZE + TILE_SIZE / 2;
         const py = interpY * TILE_SIZE + TILE_SIZE / 2;
 
-        ctx.fillStyle = this.isFrightened ? "#0000ff" : this.color;
+        ctx.fillStyle = this.isFrightened ? "#0000ff" : this.baseColor;
         ctx.beginPath();
         ctx.arc(px, py, TILE_SIZE / 2 - 3, 0, Math.PI * 2);
         ctx.fill();
@@ -477,12 +630,11 @@ class Ghost {
 }
 
 
-
 // ===== Entities =====
 
 let player;
 let redGhost;
-let yellowGhost; // only used on level 2
+let pinkGhost;
 
 
 function loadLevel(index, resetScoreAndLives = false) {
@@ -497,31 +649,32 @@ function loadLevel(index, resetScoreAndLives = false) {
 
     const playerStart = PLAYER_STARTS[currentLevelIndex];
     const redStart    = RED_GHOST_STARTS[currentLevelIndex];
-    const yellowStart = YELLOW_GHOST_STARTS[currentLevelIndex];
+    const pinkStart   = PINK_GHOST_STARTS[currentLevelIndex];
 
-    initPellets(playerStart, [redStart, yellowStart].filter(Boolean));
+    initPellets(playerStart, [redStart, pinkStart].filter(Boolean));
 
     player = new Player(playerStart.x, playerStart.y);
 
-    // Red ghost: brutal chaser
+    // Red ghost: pure BFS chase
     redGhost = new Ghost(redStart.x, redStart.y, {
         name: "Red",
         color: "red",
-        straightSpeed: 0.16,
-        turnSpeed: 0.09
+        straightSpeed: 0.17,
+        turnSpeed: 0.12,
+        behavior: "chase"
     });
 
-    // Pink ghost, bad naming
-    // TODO: Fix naming
-    if (yellowStart) {
-        yellowGhost = new Ghost(yellowStart.x, yellowStart.y, {
+    // Pink ghost: only level 2, BFS front-trap behavior
+    if (pinkStart) {
+        pinkGhost = new Ghost(pinkStart.x, pinkStart.y, {
             name: "Pink",
             color: "#ff66cc",
-            straightSpeed: 0.16,
-            turnSpeed: 0.09
+            straightSpeed: 0.17,
+            turnSpeed: 0.12,
+            behavior: "front"
         });
     } else {
-        yellowGhost = null;
+        pinkGhost = null;
     }
 
     isPowerMode = false;
@@ -568,8 +721,8 @@ window.addEventListener("keydown", (e) => {
 function activatePowerMode() {
     isPowerMode = true;
     powerModeTimer = POWER_MODE_DURATION;
-    if (redGhost)    redGhost.setFrightened(true);
-    if (yellowGhost) yellowGhost.setFrightened(true);
+    if (redGhost)  redGhost.setFrightened(true);
+    if (pinkGhost) pinkGhost.setFrightened(true);
     statusMessage = "Ghosts are frightened!";
 }
 
@@ -579,8 +732,8 @@ function updatePowerMode() {
     powerModeTimer--;
     if (powerModeTimer <= 0) {
         isPowerMode = false;
-        if (redGhost)    redGhost.setFrightened(false);
-        if (yellowGhost) yellowGhost.setFrightened(false);
+        if (redGhost)  redGhost.setFrightened(false);
+        if (pinkGhost) pinkGhost.setFrightened(false);
         statusMessage = "";
     }
 }
@@ -618,34 +771,8 @@ function collectPellet() {
     }
 }
 
-function getYellowTarget() {
-    // How many tiles ahead of the player Yellow aims for
-    const lookAhead = 4;
 
-    if (player.dirX === 0 && player.dirY === 0) {
-        return { x: player.tileX, y: player.tileY };
-    }
-
-    let tx = player.tileX;
-    let ty = player.tileY;
-    let dx = player.dirX;
-    let dy = player.dirY;
-
-    for (let i = 0; i < lookAhead; i++) {
-        const nx = tx + dx;
-        const ny = ty + dy;
-
-        if (!isWalkable(nx, ny)) break;
-
-        tx = nx;
-        ty = ny;
-    }
-
-    return { x: tx, y: ty };
-}
-
-
-// ===== Ghost Collisions =====
+// ===== Ghost target helpers =====
 
 function handleGhostCollision(ghost) {
     if (!ghost || !ghost.isActive) return;
@@ -664,11 +791,11 @@ function handleGhostCollision(ghost) {
 
             player.resetToStart();
             redGhost.resetToStart();
-            if (yellowGhost) yellowGhost.resetToStart();
+            if (pinkGhost) pinkGhost.resetToStart();
 
             isPowerMode = false;
-            if (redGhost)    redGhost.setFrightened(false);
-            if (yellowGhost) yellowGhost.setFrightened(false);
+            if (redGhost)  redGhost.setFrightened(false);
+            if (pinkGhost) pinkGhost.setFrightened(false);
 
             if (lives <= 0) {
                 statusMessage = "Game Over! Score: " + score;
@@ -738,18 +865,17 @@ function update() {
 
     updatePowerMode();
 
-    // Red: pure chase – always aims at current player tile
-    redGhost.update(player.tileX, player.tileY);
+    // Red: BFS chase to player position
+    redGhost.update(player);
 
-    // Yellow: tries to intercept
-    if (yellowGhost) {
-        const target = getYellowTarget();
-        yellowGhost.update(target.x, target.y);
+    // Pink: BFS chase to a point ahead of the player
+    if (pinkGhost) {
+        pinkGhost.update(player);
     }
 
     handleGhostCollision(redGhost);
-    if (yellowGhost) {
-        handleGhostCollision(yellowGhost);
+    if (pinkGhost) {
+        handleGhostCollision(pinkGhost);
     }
 }
 
@@ -757,8 +883,8 @@ function draw() {
     drawMaze();
     player.draw();
     redGhost.draw();
-    if (yellowGhost) {
-        yellowGhost.draw();
+    if (pinkGhost) {
+        pinkGhost.draw();
     }
     drawHUD();
 }
@@ -773,7 +899,7 @@ function gameLoop(timestamp) {
 
     accumulatedTime += delta;
 
-    // Run the simulation in fixed 60fps
+    // Run the simulation in fixed 60fps steps
     while (accumulatedTime >= FRAME_DURATION) {
         update();
         accumulatedTime -= FRAME_DURATION;
@@ -783,35 +909,90 @@ function gameLoop(timestamp) {
 
     requestAnimationFrame(gameLoop);
 }
+
+
 // ===== Start Game =====
 
 loadLevel(0, true);
+setupSwipeControlsForCanvas(canvas, (dir) => {
+    switch (dir) {
+        case "up":
+            player.setDesiredDirection(0, -1);
+            break;
+        case "down":
+            player.setDesiredDirection(0, 1);
+            break;
+        case "left":
+            player.setDesiredDirection(-1, 0);
+            break;
+        case "right":
+            player.setDesiredDirection(1, 0);
+            break;
+        case "tap":
+            // optional
+            break;
+    }
+});
+
 requestAnimationFrame(gameLoop);
 
 
-function setupTouchControls() {
-    const up    = document.getElementById("btnUp");
-    const down  = document.getElementById("btnDown");
-    const left  = document.getElementById("btnLeft");
-    const right = document.getElementById("btnRight");
+// =========================
+//  Touch Controls
+// =========================
 
-    if (!up || !down || !left || !right) return;
+function setupSwipeControlsForCanvas(canvas, onSwipe) {
+    let touchStartX = 0;
+    let touchStartY = 0;
+    let touchEndX = 0;
+    let touchEndY = 0;
 
-    const bind = (el, dx, dy) => {
-        const handler = (e) => {
-            e.preventDefault();
-            if (typeof player !== "undefined") {
-                player.setDesiredDirection(dx, dy);
+    const SWIPE_THRESHOLD = 30; // pixels
+
+    canvas.addEventListener("touchstart", (e) => {
+        if (!e.touches || e.touches.length === 0) return;
+        const touch = e.touches[0];
+        touchStartX = touch.clientX;
+        touchStartY = touch.clientY;
+        touchEndX = touchStartX;
+        touchEndY = touchStartY;
+    }, { passive: true });
+
+    canvas.addEventListener("touchmove", (e) => {
+        if (!e.touches || e.touches.length === 0) return;
+        const touch = e.touches[0];
+        touchEndX = touch.clientX;
+        touchEndY = touch.clientY;
+        // prevent page from scrolling while sliding
+        e.preventDefault();
+    }, { passive: false });
+
+    canvas.addEventListener("touchend", (e) => {
+        const dx = touchEndX - touchStartX;
+        const dy = touchEndY - touchStartY;
+        const absDx = Math.abs(dx);
+        const absDy = Math.abs(dy);
+
+        // Tap (very small movement)
+        if (absDx < SWIPE_THRESHOLD && absDy < SWIPE_THRESHOLD) {
+            onSwipe("tap");
+            return;
+        }
+
+        if (absDx > absDy) {
+            // horizontal swipe
+            if (dx > 0) {
+                onSwipe("right");
+            } else {
+                onSwipe("left");
             }
-        };
-        el.addEventListener("touchstart", handler, { passive: false });
-        el.addEventListener("mousedown", handler);
-    };
-
-    bind(up,    0, -1);
-    bind(down,  0,  1);
-    bind(left, -1,  0);
-    bind(right, 1,  0);
+        } else {
+            // vertical swipe
+            if (dy > 0) {
+                onSwipe("down");
+            } else {
+                onSwipe("up");
+            }
+        }
+    });
 }
-
-window.addEventListener("load", setupTouchControls);

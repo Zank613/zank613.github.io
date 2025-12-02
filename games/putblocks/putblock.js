@@ -1,37 +1,9 @@
-/*
-
-MIT License
-
-Copyright (c) 2025 ATAERK YILDIRIM
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-
-*/
-
-
-
 const canvas = document.getElementById("tetrisCanvas");
 const ctx = canvas.getContext("2d");
 
 const COLS = 10;
 const ROWS = 20;
-const BLOCK_SIZE = 30;
+const BLOCK_SIZE = 24;
 
 canvas.width = COLS * BLOCK_SIZE;
 canvas.height = ROWS * BLOCK_SIZE;
@@ -205,6 +177,7 @@ class Piece {
         this.matrix = this.shapes[this.rotation];
 
         if (collides(board, this)) {
+            // tiny wall-kick attempts
             const offsets = [-1, 1, -2, 2];
             let kicked = false;
             for (let off of offsets) {
@@ -216,7 +189,7 @@ class Piece {
                 this.x -= off;
             }
             if (!kicked) {
-                // revert rotation
+                // revert
                 this.rotation = oldRotation;
                 this.matrix = this.shapes[this.rotation];
             }
@@ -226,6 +199,10 @@ class Piece {
 
 let currentPiece = null;
 let nextPiece = null;
+
+// Hold piece state
+let heldType = null;
+let canHold = true;
 
 // =========================
 //  Collision & merging
@@ -277,7 +254,7 @@ let level = 1;
 function updateHUD() {
     scoreEl.textContent = score;
     linesEl.textContent = linesCleared;
-    levelEl.textContent = level;
+    levelEl.textContent = level + " (" + (dropInterval / 1000).toFixed(2) + "s)";
 }
 
 function lineClear() {
@@ -304,14 +281,13 @@ function lineClear() {
         const lineScores = [0, 40, 100, 300, 1200];
         score += lineScores[lines] * level;
 
-        // Level up every 10 lines
-        level = 1 + Math.floor(linesCleared / 10);
+        level = 1 + Math.floor(linesCleared / 5);
         updateHUD();
     }
 }
 
 // =========================
-//  Piece spawning & game over
+//  Piece spawning, hold, game over
 // =========================
 
 function randomPieceType() {
@@ -325,12 +301,33 @@ function spawnPiece() {
     }
     currentPiece = nextPiece;
     nextPiece = new Piece(randomPieceType());
+    canHold = true; // after locking a piece and spawning new one, you can hold again
 
     // If new piece immediately collides, game over
     if (collides(board, currentPiece)) {
         statusEl.textContent = "Game Over – press R to reset";
         gameOver = true;
     }
+}
+
+function holdPiece() {
+    if (!canHold || !currentPiece || gameOver) return;
+
+    const currentType = currentPiece.type;
+
+    if (heldType === null) {
+        // first time holding: stash current, spawn new
+        heldType = currentType;
+        currentPiece = null;
+        spawnPiece();
+    } else {
+        // swap current with held
+        const swapType = heldType;
+        heldType = currentType;
+        currentPiece = new Piece(swapType);
+    }
+
+    canHold = false; // only once per piece drop
 }
 
 function resetGame() {
@@ -343,12 +340,15 @@ function resetGame() {
 
     currentPiece = null;
     nextPiece = null;
-    spawnPiece();
+    heldType = null;
+    canHold = true;
 
     dropInterval = baseDropInterval;
     dropCounter = 0;
     lastTime = 0;
     gameOver = false;
+
+    spawnPiece();
 }
 
 // =========================
@@ -358,6 +358,12 @@ function resetGame() {
 let gameOver = false;
 
 document.addEventListener("keydown", (e) => {
+    // Prevent page scroll for game keys
+    const blockedKeys = ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", " ", "Spacebar"];
+    if (blockedKeys.includes(e.key)) {
+        e.preventDefault();
+    }
+
     if (gameOver && (e.key === "r" || e.key === "R")) {
         resetGame();
         return;
@@ -379,7 +385,15 @@ document.addEventListener("keydown", (e) => {
             rotatePiece(1);
             break;
         case " ":
+        case "Spacebar":
             hardDrop();
+            break;
+        case "Shift":
+        case "ShiftLeft":
+        case "ShiftRight":
+        case "c":
+        case "C":
+            holdPiece();
             break;
     }
 });
@@ -400,14 +414,25 @@ function softDrop() {
     if (collides(board, currentPiece)) {
         currentPiece.y--;
         lockPiece();
+    } else {
+        score += 1;
+        updateHUD();
     }
 }
 
 function hardDrop() {
-    do {
+    let dropDistance = 0;
+    while (true) {
         currentPiece.y++;
-    } while (!collides(board, currentPiece));
-    currentPiece.y--;
+        if (collides(board, currentPiece)) {
+            currentPiece.y--;
+            break;
+        }
+        dropDistance++;
+    }
+    // bonus for hard drop
+    score += dropDistance * 2;
+    updateHUD();
     lockPiece();
 }
 
@@ -433,8 +458,8 @@ function update(time = 0) {
     if (!gameOver) {
         dropCounter += delta;
 
-        // make speed depend on level
-        dropInterval = baseDropInterval * Math.pow(0.85, level - 1);
+        // Stronger speed scaling
+        dropInterval = baseDropInterval * Math.pow(0.8, level - 1);
 
         if (dropCounter > dropInterval) {
             currentPiece.y++;
@@ -495,11 +520,18 @@ function drawPiece(piece) {
     }
 }
 
+function drawHold() {
+    ctx.fillStyle = "#fff";
+    ctx.font = "14px sans-serif";
+    ctx.fillText("Hold: " + (heldType || "-"), 5, 16);
+}
+
 function draw() {
     drawBoard();
     if (currentPiece) {
         drawPiece(currentPiece);
     }
+    drawHold();
 }
 
 // =========================
@@ -509,3 +541,84 @@ function draw() {
 updateHUD();
 resetGame();
 update();
+
+// =========================
+//  Touch Controls
+// =========================
+
+function setupSwipeControlsForCanvas(canvas, onSwipe) {
+    let touchStartX = 0;
+    let touchStartY = 0;
+    let touchEndX = 0;
+    let touchEndY = 0;
+
+    const SWIPE_THRESHOLD = 30; // pixels
+
+    canvas.addEventListener("touchstart", (e) => {
+        if (!e.touches || e.touches.length === 0) return;
+        const touch = e.touches[0];
+        touchStartX = touch.clientX;
+        touchStartY = touch.clientY;
+        touchEndX = touchStartX;
+        touchEndY = touchStartY;
+    }, { passive: true });
+
+    canvas.addEventListener("touchmove", (e) => {
+        if (!e.touches || e.touches.length === 0) return;
+        const touch = e.touches[0];
+        touchEndX = touch.clientX;
+        touchEndY = touch.clientY;
+        // prevent page from scrolling while sliding
+        e.preventDefault();
+    }, { passive: false });
+
+    canvas.addEventListener("touchend", (e) => {
+        const dx = touchEndX - touchStartX;
+        const dy = touchEndY - touchStartY;
+        const absDx = Math.abs(dx);
+        const absDy = Math.abs(dy);
+
+        // Tap (very small movement)
+        if (absDx < SWIPE_THRESHOLD && absDy < SWIPE_THRESHOLD) {
+            onSwipe("tap");
+            return;
+        }
+
+        if (absDx > absDy) {
+            // horizontal swipe
+            if (dx > 0) {
+                onSwipe("right");
+            } else {
+                onSwipe("left");
+            }
+        } else {
+            // vertical swipe
+            if (dy > 0) {
+                onSwipe("down");
+            } else {
+                onSwipe("up");
+            }
+        }
+    });
+}
+
+setupSwipeControlsForCanvas(canvas, (dir) => {
+    if (gameOver) return;
+
+    switch (dir) {
+        case "left":
+            movePiece(-1);
+            break;
+        case "right":
+            movePiece(1);
+            break;
+        case "down":
+            softDrop();
+            break;
+        case "up":
+        case "tap":
+            // rotate on swipe up or tap
+            rotatePiece(1);
+            break;
+    }
+});
