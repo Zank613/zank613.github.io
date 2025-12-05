@@ -99,8 +99,9 @@ export class UnderworldApp {
     }
 
     handleClick(localX, localY, contentRect) {
-        const x = localX;
-        const y = localY;
+        // convert canvas coords to local window coords
+        const x = localX - contentRect.x;
+        const y = localY - contentRect.y;
 
         if (y < 0) return;
 
@@ -115,13 +116,11 @@ export class UnderworldApp {
 
             const item = this.items[i];
 
-            // Button dimensions
             const buttonW = 90;
             const buttonH = 24;
             const buttonX = contentRect.width - buttonW - 24;
             const buttonY = rowTop + 6;
 
-            // Hit detection
             if (x >= buttonX && x <= buttonX + buttonW &&
                 y >= buttonY && y <= buttonY + buttonH) {
 
