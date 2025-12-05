@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Building CenterOS: A Fake OS Game With Vanilla JavaScript</title>
+    <link rel="stylesheet" href="../style.css">
+</head>
+
+<body>
+<div class="container">
+
+    <nav>
+        <a href="../index.html">HOME</a>
+        <a href="../resume.html">RESUME</a>
+        <a href="../rss.xml">RSS</a>
+        <a href="../games.html">GAMES</a>
+    </nav>
+
+    <h1>Building CenterOS: Making a Fake OS Game With Nothing But JavaScript, One Canvas, And Too Much Ambition</h1>
+    <div class="date">Published: 05/12/2025</div>
+    <p>
+        <b><a href="../games/centeros/centeros.html">Play CenterOS</a></b>
+    </p>
+
+    <p>
+        Around three weeks ago, I learned JavaScript. Not the mythical “I’ve been doing JS for 10 years” JavaScript,
+        not the React ecosystem, not servers, not bundles, nothing. I mean literally: “Open canvas, draw Pac-Man,
+        eat pellets.” That level. Simple stuff. Fun! Then I made Tetris. Also fun.
+    </p>
+
+    <p>
+        And then with no transition my brain decided: “What if we build a full fake operating system inside a canvas?
+        And what if it has police databases, WiFi cracking, an underworld market, a live case management system,
+        a trace meter, random officers going on and off duty, a notepad app, buttons, terminals, clickables,
+        and a bunch of nonsense that makes the browser act like it's a suspicious device from a horror game?”
+    </p>
+
+    <p>
+        I didn’t plan any of this. I just said yes to the impulse.
+        What follows is a breakdown of how <b>CenterOS</b> works underneath. Not as some grand engineering feat,
+        but as a surprisingly coherent mess of small JavaScript parts working together. Everything here runs in a
+        single canvas. No HTML UI frameworks. No external libs. Just classes, objects, and the update/render cycle
+        I learned in class three weeks ago.
+    </p>
+
+    <hr>
+
+    <h2>CenterOS Philosophy: “Fake it until it feels real”</h2>
+
+    <p>
+        A huge part of the magic in games like <i>Scrutinized</i> and <i>Welcome to the Game</i> is that the computer
+        itself feels alive. The OS lies to you. The network lies to you. You type something and the machine reacts in
+        its own strange rhythm. You’re not clicking menus you’re peeking into someone else’s digital world.
+    </p>
+
+    <p>
+        CenterOS is my attempt to reach that feeling using very small tools:
+    </p>
+
+    <ul>
+        <li>One canvas</li>
+        <li>A game loop</li>
+        <li>Classes for apps</li>
+        <li>State machines</li>
+        <li>Fake databases made of arrays</li>
+        <li>A world object that pretends to be alive</li>
+        <li>A trace meter that wants you dead</li>
+    </ul>
+
+    <p>
+        The point wasn’t to be realistic, the point was to feel like an OS with a personality.
+    </p>
+
+    <hr>
+
+    <h2>The Loop: The Heartbeat of CenterOS</h2>
+
+    <p>
+        Everything runs through one loop defined in <code>loop.js</code>.
+        It’s not async, not promise-based. Just a fixed timestep:
+    </p>
+
+    <pre><code>function tick(now) {
+    const delta = now - lastTime;
+    accumulator += delta;
+
+    while (accumulator &gt;= frameDuration) {
+        update(dt);
+        accumulator -= frameDuration;
+    }
+
+    render();
+    requestAnimationFrame(tick);
+}</code></pre>
+
+    <p>
+        This loop calls:
+    </p>
+
+    <ul>
+        <li><code>update(dt)</code> – to advance the world</li>
+        <li><code>render()</code> – to draw everything</li>
+    </ul>
+
+    <p>
+        And that’s truly it.<br>
+        A simple loop.<br>
+        Everything alive in CenterOS breathes in that heartbeat.
+    </p>
+
+    <hr>
+
+    <h2>The OS Layer: Where Windows, Apps, and Input Pretend to Be a Real OS</h2>
+
+    <p>
+        <b>windowManager.js</b> handles:
+    </p>
+
+    <ul>
+        <li>Which app is open</li>
+        <li>Window rectangles</li>
+        <li>Routing clicks and keystrokes</li>
+    </ul>
+
+    <p>
+        <b>appRegistry.js</b> is basically “installed apps” a lookup table of classes that can be launched.
+    </p>
+
+    <p>
+        <b>state.js</b> stores persistent things:
+    </p>
+
+    <ul>
+        <li>active case data</li>
+        <li>officers</li>
+        <li>citizens</li>
+        <li>heat/trace levels</li>
+        <li>what night we're on</li>
+    </ul>
+
+    <p>
+        This is all extremely lightweight. No file I/O, no backend.
+        It’s basically a pretend operating system built from arrays and objects.
+    </p>
+
+    <hr>
+
+    <h2>Apps: Buttons, Terminals, Windows, and Chaos</h2>
+
+    <p>
+        I originally thought I’d make only terminal-based apps. But I lied to myself.
+        Because I ended up making:
+    </p>
+
+    <ul>
+        <li>Button-based apps</li>
+        <li>Terminal-based apps</li>
+    </ul>
+
+    <p>
+        For example, <b>caseManagerApp.js</b> has literal buttons you can click with the mouse,
+        arranged in a grid, drawn onto the canvas.
+    </p>
+
+    <p>
+        Meanwhile, <b>NetHackerApp.js</b> is full terminal simulation; scrolling lines, command parsing,
+        and “fake typing” behavior.
+    </p>
+
+    <p>
+        And apps like <b>telScannerApp.js</b> mix text scanning output with clickable UI.
+    </p>
+
+    <p>
+        The reason this works is because every app follows the same structure:
+    </p>
+
+    <ul>
+        <li><code>update(dt)</code></li>
+        <li><code>render(ctx, rect)</code></li>
+        <li><code>handleKey(event)</code></li>
+        <li><code>handleClick(x, y)</code></li>
+    </ul>
+
+    <p>
+        The OS doesn’t care whether you’re a terminal, or a button grid, or a scanner, or a database viewer.
+        It just pipes events to the currently active window.
+    </p>
+
+    <p>
+        That’s what gives CenterOS the “everything feels integrated” vibe.
+    </p>
+
+    <hr>
+
+    <h2>The Terminal: Just an Array of Strings and a Dream</h2>
+
+    <p>
+        The terminal in CenterOS looks alive but is actually dead simple.
+        It’s literally:
+    </p>
+
+    <pre><code>this.lines = [];
+this.input = "";
+this.maxLines = 150;</code></pre>
+
+    <p>
+        When you type:
+    </p>
+
+    <ul>
+        <li>Characters append to <code>this.input</code></li>
+        <li>Enter pushes <code>this.input</code> into <code>this.lines</code></li>
+        <li>Parser splits the input by spaces</li>
+    </ul>
+
+    <p>
+        The rendering is literally:
+    </p>
+
+    <pre><code>ctx.fillText(line, x, y)</code></pre>
+
+    <p>
+        Line by line.<br>
+        No fancy animations.<br>
+        The feel comes from pacing how often messages appear, delays, formatting.
+    </p>
+
+    <hr>
+
+    <h2>The World: Making Fake Humans Behave Worse</h2>
+
+    <p>
+        This is where the "game" part sneaks in.
+        <b>caseWorld.js</b> generates:
+    </p>
+
+    <ul>
+        <li>police officers for the night</li>
+        <li>their duty status</li>
+        <li>their networks</li>
+        <li>wifi SSIDs</li>
+        <li>citizens tied to the case</li>
+    </ul>
+
+    <p>
+        Every officer has:
+    </p>
+
+    <ul>
+        <li>a police ID</li>
+        <li>an SSID (their WiFi network you can crack)</li>
+        <li>an on-duty/off-duty timer</li>
+        <li>a behavior pattern that can affect heat</li>
+    </ul>
+
+    <p>
+        <b>networkManager.js</b> takes the networks from the officers and displays them as hackable WiFi networks.
+    </p>
+
+    <p>
+        <b>citizenDbApp.js</b> lets you look up people involved in cases.
+    </p>
+
+    <p>
+        <b>caseManagerApp.js</b> ties everything together you solve cases by coordinating the tools in other apps.
+    </p>
+
+    <p>
+        It’s all very small and simple, but when combined, it feels like you’re hacking into a tiny simulated world.
+    </p>
+
+    <hr>
+
+    <h2>Hacking: Timers, Fake Progress Bars, and No Async</h2>
+
+    <p>
+        Most people assume hacking simulations use timers, promises, delays, async code, etc.
+        CenterOS does not.
+    </p>
+
+    <p>
+        It’s all done in <b>update(dt)</b> via state machines.
+    </p>
+
+    <p>
+        For example, WiFi cracking:
+    </p>
+
+    <ul>
+        <li><code>duration</code> – how long to crack</li>
+        <li><code>elapsed</code> – accumulated time</li>
+        <li><code>tries</code> – attempts so far</li>
+    </ul>
+
+    <p>
+        On every frame, I simply do:
+    </p>
+
+    <pre><code>job.elapsed += dt;
+job.tries += job.triesPerSecond * dt;
+
+if (job.elapsed &gt;= job.duration) {
+    completeCrack();
+}</code></pre>
+
+    <p>
+        That’s it.<br>
+        No async/await.<br>
+        No setTimeout.<br>
+        The world only progresses because the loop keeps ticking.
+    </p>
+
+    <hr>
+
+    <h2>Buttons &amp; Clickable UI</h2>
+
+    <p>
+        Quite a few apps have clickable UIs:
+    </p>
+
+    <ul>
+        <li>Case manager buttons</li>
+        <li>Underworld app purchase buttons</li>
+        <li>Stress relief controls</li>
+        <li>TelScanner UI zones</li>
+    </ul>
+
+    <p>
+        These are just rectangles tested with:
+    </p>
+
+    <pre><code>if (x &gt;= rect.x &amp;&amp; x &lt;= rect.x + rect.w &amp;&amp;
+    y &gt;= rect.y &amp;&amp; y &lt;= rect.y + rect.h) {
+    // clicked inside this button
+}</code></pre>
+
+    <p>
+        And then I draw them with:
+    </p>
+
+    <pre><code>ctx.fillRect(...);
+ctx.fillText(...);</code></pre>
+
+    <p>
+        This makes the UI feel like an actual OS with multiple interaction styles, not just a text-only shell.
+    </p>
+
+    <hr>
+
+    <h2>The Trace System: The Thing Trying To Kill You If You Can Die</h2>
+
+    <p>
+        <b>traceManager.js</b> is the part that whispers:
+        <i>“You should not be doing that.”</i>
+    </p>
+
+    <p>
+        Every suspicious action raises trace.
+        Some hacks spike it.
+        Some apps lower it.
+        The atmosphere manager flashes warnings.
+        Everything ties back into the loop.
+    </p>
+
+    <p>
+        There’s nothing mathematically complicated here just numbers, thresholds, and events.
+        But your brain interprets it as danger.
+    </p>
+
+    <hr>
+
+    <h2>Atmosphere: Shakes, Alerts, and “Something Is Wrong” Hopefully</h2>
+
+    <p>
+        <b>atmosphereManager.js</b> is small but very effective:
+    </p>
+
+    <ul>
+        <li>screen flash events</li>
+        <li>shake effects</li>
+        <li>alert banners</li>
+        <li>randomized “tension spikes”</li>
+    </ul>
+
+    <p>
+        It turns raw mechanics into vibes.
+    </p>
+
+    <hr>
+
+    <h2>What I Learned From Accidentally Building an OS</h2>
+
+    <p>
+        The biggest lesson:
+        <b>Small pieces scale surprisingly far when they talk to each other cleanly.</b>
+    </p>
+
+    <p>
+        I didn’t reinvent operating systems.
+        I just stitched together:
+    </p>
+
+    <ul>
+        <li>a main loop</li>
+        <li>a window manager</li>
+        <li>apps as classes</li>
+        <li>a world object</li>
+        <li>a bunch of tiny state machines</li>
+    </ul>
+
+    <p>
+        And because each piece stayed simple, the whole thing stayed understandable to a point.
+    </p>
+
+    <p>
+        I also learned that you don’t need advanced frameworks to make something feel bigger than it is (beginner talking here).
+        A canvas, a few rectangles, and some text can create an entire imaginary machine if you lean into the limitations.
+    </p>
+
+    <p>
+        CenterOS is not a “big” project by professional standards.
+        But for me, three weeks into learning JS it taught me more about architecture, state, and simulation than
+        any tutorial ever could.
+    </p>
+
+    <p>
+        And honestly?
+        It was just for an impulse that made me lose sleep over days where I just hated JavaScript.
+        But it was worth it at the end.
+        <b>I hate you Script of Java.</b>
+    </p>
+
+    <hr>
+
+    <p><a href="../index.html">&larr; Back to list</a></p>
+
+</div>
+</body>
+</html>

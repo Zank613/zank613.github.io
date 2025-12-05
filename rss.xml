@@ -3,7 +3,7 @@
     <channel>
 
         <!-- Basic site metadata -->
-        <title>Ataerk.dev</title>
+        <title>ataerk.dev</title>
         <link>https://ataerk.dev</link>
         <description>Personal website and technical notes by Ataerk</description>
         <language>en-us</language>
@@ -16,6 +16,14 @@
             <guid>https://ataerk.dev/post1.html</guid>
             <pubDate>Thu, 20 Nov 2025 12:00:00 GMT</pubDate>
             <description>Example</description>
+        </item>
+
+        <item>
+            <title>Building CenterOS: A Fake OS Game in JavaScript</title>
+            <link>https://ataerk.dev/posts/centeros.html</link>
+            <guid>https://ataerk.dev/posts/centeros.html</guid>
+            <pubDate>Fri, 05 Dec 2025 00:00:00 GMT</pubDate>
+            <description>A short technical breakdown of how I built CenterOS: a fake operating system horror/investigation game running entirely in the browser with vanilla JavaScript and a single canvas.</description>
         </item>
 
     </channel>
