@@ -10,8 +10,9 @@ import { PoliceDbApp } from "../apps/policeDbApp.js";
 import { SimDbApp } from "../apps/simDbApp.js";
 import { TelScannerApp } from "../apps/telScannerApp.js";
 import { AuthLinkApp } from "../apps/authLinkApp.js";
-import {DutyBoardApp} from "../apps/dutyBoardApp.js";
+import { DutyBoardApp } from "../apps/dutyBoardApp.js";
 import { StressReliefApp } from "../apps/stressReliefApp.js";
+import { BrowserApp } from "../apps/browserApp.js";
 
 const NetToolsApp = {
     update() {},
@@ -88,7 +89,7 @@ export const appDefinitions = [
     {
         id: "shop",
         title: "Underworld Market",
-        preferredSize: { width: 620, height: 380 },
+        preferredSize: { width: 620, height: 630 },
         createInstance(data) { return new UnderworldApp(data); }
     },
     {
@@ -106,7 +107,7 @@ export const appDefinitions = [
     {
         id: "authlink",
         title: "AuthLink Protocol",
-        preferredSize: { width: 300, height: 350 },
+        preferredSize: { width: 800, height: 600 },
         createInstance() {
             return new AuthLinkApp(window.pendingAuthPoliceId);
         }
@@ -116,6 +117,12 @@ export const appDefinitions = [
         title: "StressReducer",
         preferredSize: { width: 300, height: 250},
         createInstance: () => new StressReliefApp()
+    },
+    {
+        id: "browser",
+        title: "Browser",
+        preferredSize: {width: 800, height: 600},
+        createInstance: () => new BrowserApp()
     }
 ];
 

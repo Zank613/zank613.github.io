@@ -33,6 +33,18 @@ window.addEventListener("force-open-app", (e) => {
     bus.emit("openApp", e.detail);
 });
 
+window.addEventListener("centeros-trigger-trace", (e) => {
+    if (state.gameOver) return;
+    const detail = e.detail || {};
+    const difficulty =
+        detail.difficulty ||
+        (Math.floor((state.policeHeat || 0) / 30) + 1);
+
+    if (!traceManager.active) {
+        traceManager.triggerTrace(difficulty);
+    }
+});
+
 generateTonightWorld(state.time.day);
 
 const officers = state.world.policeOfficers || [];

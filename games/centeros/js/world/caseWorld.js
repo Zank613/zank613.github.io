@@ -8,6 +8,8 @@ import {
     EVIDENCE_SNIPPETS
 } from "./caseData.js";
 
+import { generateSiteWorld } from "./siteGenerator.js";
+
 // small helpers
 
 function randChoice(arr) {
@@ -337,6 +339,8 @@ export function generateTonightWorld(day) {
             reason: null           // "submit" | "timeout"
         }
     };
+
+    generateSiteWorld(day, citizens, state.world.case);
 }
 
 // verdict evaluation

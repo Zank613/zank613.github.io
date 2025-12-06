@@ -5,7 +5,7 @@ import { getOfficerById } from "../world/caseWorld.js";
 export class NetHackerApp {
     constructor() {
         this.lines = [
-            "NetHacker v2.1 (Hybrid)",
+            "NetHacker v3.0",
             "Type: help",
             ""
         ];
@@ -62,6 +62,12 @@ export class NetHackerApp {
             this.append("  crack [BLOB]           - Decrypt handshake");
             this.append("  inject [BLOB] poldb    - Inject to auth server");
             this.append("");
+            this.append("Network Stack:");
+            this.append("  stack status           - Show router/VPN summary");
+            this.append("  router on|off          - Toggle AroundRouter (if installed)");
+            this.append("  vpn status             - Show VPN tiers and connection");
+            this.append("  vpn use [0-4]          - Set active VPN chain (0 = off)");
+            this.append("");
             return;
         }
 
@@ -84,6 +90,111 @@ export class NetHackerApp {
             } else {
                 this.append(`Address for "${ssid}": 0x${net.address}`);
             }
+            this.append("");
+            return;
+        }
+
+        // Helper: make sure state.vpn / state.router exist so we don't crash
+        if (!state.vpn) {
+            state.vpn = { tier: 0, activeTier: 0, uptimeSeconds: 0 };
+        }
+        if (!state.router) {
+            state.router = { owned: false, active: false };
+        }
+
+        const stackStatusMatch = cmd.match(/^stack\s+status$/i);
+        if (stackStatusMatch) {
+            const installedTier = state.vpn.tier || 0;
+            const activeTier = state.vpn.activeTier || 0;
+            const routerOwned = !!state.router.owned;
+            const routerActive = !!state.router.active;
+
+            this.append("Network Stack Status:");
+            this.append(`  AroundRouter: ${routerOwned ? (routerActive ? "ACTIVE" : "installed, OFF") : "NOT INSTALLED"}`);
+            this.append(`  VPN installed tier: ${installedTier}`);
+            this.append(`  VPN active chain: ${activeTier > 0 ? "Tier " + activeTier : "DISCONNECTED"}`);
+
+            // crude risk hint
+            let riskScore = 1.0;
+            if (!routerActive) riskScore *= 1.3;
+            if (activeTier === 0) riskScore *= 1.4;
+            else if (activeTier === 1) riskScore *= 1.1;
+            else if (activeTier === 2) riskScore *= 0.9;
+            else if (activeTier === 3) riskScore *= 0.7;
+            else if (activeTier >= 4) riskScore *= 0.5;
+
+            let label = "UNKNOWN";
+            if (riskScore >= 1.3) label = "SEVERE";
+            else if (riskScore >= 1.0) label = "HIGH";
+            else if (riskScore >= 0.75) label = "ELEVATED";
+            else label = "LOW";
+
+            this.append(`  Estimated trench profile: ${label}`);
+            this.append("");
+            return;
+        }
+
+        const routerMatch = cmd.match(/^router\s+(on|off)$/i);
+        if (routerMatch) {
+            const mode = routerMatch[1].toLowerCase();
+            if (!state.router.owned) {
+                this.append("Error: AroundRouter not installed. Check Underworld.");
+                return;
+            }
+            if (mode === "on") {
+                state.router.active = true;
+                this.statusLine = "AroundRouter path locked in.";
+                this.append("AroundRouter: ACTIVE.");
+            } else {
+                state.router.active = false;
+                this.statusLine = "AroundRouter disabled.";
+                this.append("AroundRouter: OFF.");
+            }
+            this.append("");
+            return;
+        }
+
+        if (/^vpn\s+status$/i.test(cmd)) {
+            const installedTier = state.vpn.tier || 0;
+            const activeTier = state.vpn.activeTier || 0;
+            const up = state.vpn.uptimeSeconds || 0;
+
+            this.append("VPN Status:");
+            this.append(`  Installed max tier: ${installedTier}`);
+            this.append(`  Active chain: ${activeTier > 0 ? "Tier " + activeTier : "DISCONNECTED"}`);
+            this.append(`  Uptime (approx): ${up.toFixed(1)}s`);
+            this.append("");
+            return;
+        }
+
+        const vpnUseMatch = cmd.match(/^vpn\s+use\s+(\d)$/i);
+        if (vpnUseMatch) {
+            const desired = parseInt(vpnUseMatch[1], 10);
+            const installedTier = state.vpn.tier || 0;
+
+            if (desired === 0) {
+                state.vpn.activeTier = 0;
+                state.vpn.uptimeSeconds = 0;
+                this.statusLine = "VPN chain disconnected.";
+                this.append("VPN: disconnected.");
+                this.append("");
+                return;
+            }
+
+            if (desired < 0 || desired > 4) {
+                this.append("Error: VPN tier must be between 0 and 4.");
+                return;
+            }
+            if (installedTier < desired) {
+                this.append(`Error: Highest purchased tier is ${installedTier}.`);
+                this.append("Use Underworld to buy higher VPN tiers.");
+                return;
+            }
+
+            state.vpn.activeTier = desired;
+            state.vpn.uptimeSeconds = 0;
+            this.statusLine = `VPN tier ${desired} chain active.`;
+            this.append(`VPN: connected to tier ${desired} chain.`);
             this.append("");
             return;
         }
@@ -239,6 +350,31 @@ export class NetHackerApp {
             } else {
                 this.statusLine =
                     `Cracking passwords (${Math.floor(job.tries)}) [WPA${job.wpa}]`;
+            }
+        }
+
+        // VPN overuse tracking
+        if (!state.vpn) {
+            state.vpn = { tier: 0, activeTier: 0, uptimeSeconds: 0 };
+        }
+
+        if (state.vpn.activeTier && state.vpn.activeTier > 0) {
+            state.vpn.uptimeSeconds = (state.vpn.uptimeSeconds || 0) + dt;
+
+            // If user is sitting on VPN4 for a long time, the world gets nervous.
+            if (state.vpn.activeTier >= 4 && state.vpn.uptimeSeconds > 20) {
+                const oldHeat = state.policeHeat || 0;
+                const newHeat = Math.min(100, oldHeat + dt * 0.3);
+                state.policeHeat = newHeat;
+
+                // Occasionally hint that something feels off
+                if (Math.floor(oldHeat) !== Math.floor(newHeat)) {
+                    this.statusLine = "VPN4 side-channel noise observed on upstream nodes.";
+                }
+            }
+        } else {
+            if (state.vpn) {
+                state.vpn.uptimeSeconds = 0;
             }
         }
     }

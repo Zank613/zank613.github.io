@@ -29,8 +29,9 @@ export class Desktop {
             { id: "net",       label: "Net",        color: "#4caf50", x: 108, y: 408 },
 
             // Column 3
-            { id: "duty",      label: "DutyBoard",  color: "#999999", x: 192, y: 48 },
-            { id: "stressReducer",   label: "StressReducer", color: "#dc2acf", x: 192, y: 120}
+            { id: "duty",                   label: "DutyBoard",  color: "#999999", x: 192, y: 48 },
+            { id: "stressReducer",          label: "StressReducer", color: "#dc2acf", x: 192, y: 120},
+            { id: "browser",                label: "Browser", color: "#9e9393", x: 192, y: 192}
         ];
 
         this.wifiHitRect = null;

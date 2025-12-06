@@ -30,6 +30,22 @@ export const state = {
         activeNetworkId: null
     },
 
+    // VPN stack (0 = none, 1..4 = tiers)
+    vpn: {
+        tier: 0,
+
+        activeTier: 0,
+
+        uptimeSeconds: 0
+    },
+
+    // AroundRouter access (needed for DarkestTrench etc.)
+    router: {
+        owned: false,
+
+        active: false
+    },
+
     // police security session
     security: {
         // { policeId, code, validUntilMin }
@@ -55,7 +71,10 @@ export const state = {
 
         // shared selections
         selectedCitizenId: null,
-        selectedImei: null
+        selectedImei: null,
+
+        // site-level generated content (PleaseFindThem, DarkestTrench, etc.)
+        sites: {}
     },
 
     // simple case scoring stats

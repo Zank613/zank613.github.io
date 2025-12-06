@@ -40,6 +40,48 @@ export class UnderworldApp {
                 label: "RemoteAccesser",
                 desc: "Harness remote machines. Random E€E each in-game hour.",
                 cost: 16
+            },
+
+            // Network anonymity stack
+
+            {
+                id: "aroundrouter",
+                type: "router",
+                label: "AroundRouter",
+                desc: "Multi-hop obfuscation router. Required for DarkestTrench access.",
+                cost: 6
+            },
+            {
+                id: "vpn1",
+                type: "vpn",
+                tier: 1,
+                label: "Core VPN",
+                desc: "Baseline tunnel. Slightly reduces trace from risky sites.",
+                cost: 2
+            },
+            {
+                id: "vpn2",
+                type: "vpn",
+                tier: 2,
+                label: "VPN 2",
+                desc: "Multi-hop routing. Better protection from Trench traces.",
+                cost: 5
+            },
+            {
+                id: "vpn3",
+                type: "vpn",
+                tier: 3,
+                label: "VPN 3",
+                desc: "Obfuscated traffic. Scrambles patterns, slows trace.",
+                cost: 9
+            },
+            {
+                id: "vpn4",
+                type: "vpn",
+                tier: 4,
+                label: "VPN 4",
+                desc: "Experimental chain. Max protection, unstable if overused.",
+                cost: 14
             }
         ];
         this.message = "";
@@ -58,6 +100,14 @@ export class UnderworldApp {
         }
         if (item.id === "remote") {
             return !!state.remote && !!state.remote.owned;
+        }
+        if (item.type === "router") {
+            return !!state.router && !!state.router.owned;
+        }
+        if (item.type === "vpn") {
+            const currentTier = (state.vpn && state.vpn.tier) || 0;
+            const requiredTier = item.tier || 0;
+            return currentTier >= requiredTier;
         }
         return false;
     }
@@ -93,6 +143,14 @@ export class UnderworldApp {
         } else if (item.id === "remote") {
             if (!state.remote) state.remote = {};
             state.remote.owned = true;
+        } else if (item.type === "router") {
+            if (!state.router) state.router = {};
+            state.router.owned = true;
+        } else if (item.type === "vpn") {
+            if (!state.vpn) state.vpn = { tier: 0 };
+            const current = state.vpn.tier || 0;
+            const targetTier = item.tier || 0;
+            state.vpn.tier = Math.max(current, targetTier);
         }
 
         this.message = `${item.label} purchased and installed.`;
