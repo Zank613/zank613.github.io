@@ -5,12 +5,14 @@ const SITE_ROUTES = {
     "home": "sites/pleasefindthem.html",
     "pleasefindthem.com": "sites/pleasefindthem.html",
     "darkesttrench.w3": "sites/darkesttrench.html",
-    "thecitypulse.w3": "sites/pleasefindthem.html"
+    "thecitypulse.w3": "sites/pleasefindthem.html",
+    "center.center": "sites/center.html"
 };
 
 const DARK_SITES = new Set(["darkesttrench.w3"]);
 const SITE_RISK = {
     "home": 0.0,
+    "center.center": 0.0,
     "pleasefindthem.com": 0.4,
     "darkesttrench.w3": 0.9
 };
@@ -135,6 +137,9 @@ export class BrowserApp extends BaseApp {
                     detail: { source: "browser", url: urlKey }
                 }));
             }
+        } else if (urlKey === "center.center") {
+            this.message = "Verified Corporate Signature. Connection Monitored.";
+            this.secureStatus = "secure";
         } else {
             this.message = "TLS Handshake Established.";
         }
@@ -289,7 +294,6 @@ export class BrowserApp extends BaseApp {
         const ui = this.ui;
 
         // 1. Navigation Bar Clicks (Static Y)
-        // Since getLocalCoords adds scrollY, we subtract it to check static UI elements
         const staticY = y - this.scrollY;
 
         if (this.isInside(x, staticY, ui.back.x, ui.back.y, ui.back.w, ui.back.h)) {
@@ -338,19 +342,20 @@ export class BrowserApp extends BaseApp {
     render(ctx, rect) {
         super.render(ctx, rect);
 
+        const colors = this.getColors();
+        const fonts = this.getFonts();
+
         const tabH = 34;
         const navH = 40;
         const statusH = 24;
         const contentTop = tabH + navH;
 
-        // Static Y position for drawing
         const staticY = rect.y + this.scrollY;
 
-        // 1. Draw Tab Bar
+        // 1. Tab Bar
         ctx.fillStyle = "#0c0e12";
         ctx.fillRect(rect.x, staticY, rect.width, tabH);
 
-        // Active Tab
         ctx.fillStyle = "#20222a";
         ctx.beginPath();
         ctx.moveTo(rect.x + 8, staticY + tabH);
@@ -364,13 +369,11 @@ export class BrowserApp extends BaseApp {
         ctx.textAlign = "left";
         ctx.fillText(this.pageTitle.substring(0, 20), rect.x + 20, staticY + 22);
 
-        // 2. Draw Navigation Bar
+        // 2. Navigation Bar
         const navY = staticY + tabH;
         ctx.fillStyle = "#20222a";
         ctx.fillRect(rect.x, navY, rect.width, navH);
 
-        // Define UI Regions in LOCAL COORDINATES (relative to content top-left)
-        // Note: The click handler will check against these local X/Y values.
         this.ui = {
             back: { x: 10, y: tabH + 8, w: 24, h: 24 },
             fwd: { x: 40, y: tabH + 8, w: 24, h: 24 },
@@ -379,12 +382,10 @@ export class BrowserApp extends BaseApp {
             address: { x: 135, y: tabH + 5, w: rect.width - 150, h: 30 }
         };
 
-        // Render Buttons (Drawing requires adding rect.x / staticY)
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
         ctx.font = "16px system-ui";
 
-        // Helper to draw
         const drawUi = (elem, text) => {
             ctx.fillText(text, rect.x + elem.x + 12, staticY + elem.y + 12);
         };
@@ -399,7 +400,6 @@ export class BrowserApp extends BaseApp {
         drawUi(this.ui.refresh, "⟳");
         drawUi(this.ui.home, "⌂");
 
-        // Render Address Bar
         const addr = this.ui.address;
         const drawAddrX = rect.x + addr.x;
         const drawAddrY = staticY + addr.y;
@@ -424,7 +424,7 @@ export class BrowserApp extends BaseApp {
         ctx.fillStyle = this.addressFocused ? "#fff" : "#aaa";
         ctx.fillText(txt, drawAddrX + 30, drawAddrY + 16);
 
-        // 3. Render Status Bar
+        // 3. Status Bar
         const statY = staticY + rect.height - statusH;
         ctx.fillStyle = "#2b2e37";
         ctx.fillRect(rect.x, statY, rect.width, statusH);
@@ -460,6 +460,24 @@ export class BrowserApp extends BaseApp {
 
         ctx.textAlign = "left";
         ctx.textBaseline = "top";
+
+        if (this.currentUrl === "center.center") {
+            const logoX = rect.x + 40;
+            const logoY = rect.y + y;
+
+            // Draw Center logo
+            ctx.strokeStyle = colors.highlight;
+            ctx.lineWidth = 2;
+            ctx.strokeRect(logoX, logoY, 60, 60);
+
+            ctx.fillStyle = colors.highlight;
+            ctx.font = "bold 24px monospace";
+            ctx.textAlign = "center";
+            ctx.fillText("C", logoX + 30, logoY + 38);
+
+            y += 80;
+            ctx.textAlign = "left";
+        }
 
         for (const block of this.blocks) {
             const drawY = rect.y + y;

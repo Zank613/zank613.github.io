@@ -232,7 +232,6 @@ export class WindowManager {
         const win = this.windows.find(w => w.id === this.activeWindowId);
         if (win && win.appInstance && win.appInstance.handleWheel) {
             const contentRect = this._getContentRect(win);
-            // Only scroll if mouse is roughly over window (optional check)
             win.appInstance.handleWheel(e.deltaY, contentRect);
         }
     }
@@ -268,7 +267,7 @@ export class WindowManager {
             const isActive = win.id === this.activeWindowId;
             const r = { x: win.x, y: win.y, w: win.width, h: win.height };
 
-            // Draw Window Frame & Title
+            // Window Frame
             ctx.shadowColor = "rgba(0,0,0,0.5)";
             ctx.shadowBlur = isActive ? 20 : 5;
             ctx.fillStyle = colors.windowBg;
@@ -279,73 +278,106 @@ export class WindowManager {
             ctx.lineWidth = 1;
             ctx.strokeRect(r.x, r.y, r.w, r.h);
 
+            // Title Bar
             ctx.fillStyle = isActive ? colors.titleBarActive : colors.titleBar;
             ctx.fillRect(r.x, r.y, r.w, win.titleBarHeight);
 
+            // Title Text
             ctx.fillStyle = isActive ? colors.titleTextActive : colors.titleText;
             ctx.font = fonts.title;
             ctx.textAlign = "left";
             ctx.textBaseline = "middle";
             ctx.fillText(win.title, r.x + 8, r.y + win.titleBarHeight / 2);
 
+            // Window Controls
             this._renderControls(ctx, win, colors);
 
-            // Draw Content
+            // Content
             const contentRect = this._getContentRect(win);
             ctx.save();
             ctx.beginPath();
             ctx.rect(contentRect.x, contentRect.y, contentRect.width, contentRect.height);
             ctx.clip();
 
-            // Apply translation so the app draws "scrolled up"
             if (win.appInstance) {
                 const scrollY = win.appInstance.scrollY || 0;
                 ctx.translate(0, -scrollY);
-
-                win.appInstance.render(ctx, contentRect);
-
-                ctx.translate(0, scrollY); // Restore for scrollbar
+                if (win.appInstance.render) win.appInstance.render(ctx, contentRect);
+                ctx.translate(0, scrollY);
             }
 
-            // Draw Scrollbar
+            // Scrollbar
             if (win.appInstance && win.appInstance.contentHeight > contentRect.height) {
                 const totalH = win.appInstance.contentHeight;
                 const visibleH = contentRect.height;
                 const scrollY = win.appInstance.scrollY || 0;
-
                 const barWidth = 6;
                 const trackH = visibleH;
                 const thumbH = Math.max(20, (visibleH / totalH) * trackH);
                 const thumbY = (scrollY / (totalH - visibleH)) * (trackH - thumbH);
-
                 const barX = contentRect.x + contentRect.width - barWidth - 2;
                 const barY = contentRect.y;
 
-                // Track
                 ctx.fillStyle = "rgba(0,0,0,0.2)";
                 ctx.fillRect(barX, barY, barWidth, trackH);
-
-                // Thumb
                 ctx.fillStyle = colors.highlight || "#888";
                 ctx.fillRect(barX, barY + thumbY, barWidth, thumbH);
             }
-
             ctx.restore();
         }
     }
 
     _renderControls(ctx, win, colors) {
+        const style = themeManager.getWindowControls();
         const centerY = win.y + win.titleBarHeight / 2;
-        let x = win.x + win.width - 7 - 10;
-        const drawBtn = (color) => {
-            ctx.fillStyle = color;
-            ctx.beginPath();
-            ctx.arc(x, centerY, 6, 0, Math.PI*2);
-            ctx.fill();
-            x -= 20;
-        };
-        drawBtn(colors.buttonClose);
-        drawBtn(colors.buttonMax);
-        drawBtn(colors.buttonMin);
+
+        const closeCX = win.x + win.width - 14;
+        const maxCX = win.x + win.width - 38;
+        const minCX = win.x + win.width - 62;
+
+        if (style === 'centeros') {
+            // Original: Colored Circles
+            const drawBtn = (x, color) => {
+                ctx.fillStyle = color;
+                ctx.beginPath(); ctx.arc(x, centerY, 6, 0, Math.PI * 2); ctx.fill();
+            };
+            drawBtn(closeCX, colors.buttonClose);
+            drawBtn(maxCX, colors.buttonMax);
+            drawBtn(minCX, colors.buttonMin);
+        }
+        else if (style === 'classic') {
+            // Classic: Windows-like symbols (□ ✕)
+            ctx.font = "bold 14px monospace";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillStyle = colors.titleText;
+
+            ctx.fillText("✕", closeCX, centerY);
+            const maxSymbol = win.isMaximized ? "❐" : "□";
+            ctx.fillText(maxSymbol, maxCX, centerY - 1);
+            ctx.fillText("─", minCX, centerY - 2);
+        }
+        else if (style === 'retro') {
+            // Retro: Pixelated boxes
+            ctx.font = "12px monospace";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            const btnSize = 16;
+
+            const drawPixelBtn = (text, x) => {
+                ctx.fillStyle = colors.windowBorder; // Dark border
+                ctx.fillRect(x - btnSize/2, centerY - btnSize/2, btnSize, btnSize);
+
+                ctx.fillStyle = colors.windowBg; // Inner fill
+                ctx.fillRect(x - btnSize/2 + 1, centerY - btnSize/2 + 1, btnSize - 2, btnSize - 2);
+
+                ctx.fillStyle = colors.titleText;
+                ctx.fillText(text, x, centerY + 1);
+            };
+
+            drawPixelBtn("x", closeCX);
+            drawPixelBtn(win.isMaximized ? "v" : "^", maxCX);
+            drawPixelBtn("_", minCX);
+        }
     }
 }

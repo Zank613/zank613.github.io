@@ -1,11 +1,8 @@
-// centeros/js/os/theme.js
-
 export const THEMES = {
     ORIGINAL: {
         id: "original",
         name: "CenterOS Original",
         colors: {
-            // Window
             windowBg: "#15171d",
             windowBorder: "#333b4d",
             windowBorderActive: "#4d9fff",
@@ -13,22 +10,16 @@ export const THEMES = {
             titleBarActive: "#363c4a",
             titleText: "#aaccff",
             titleTextActive: "#ffffff",
-
-            // Taskbar & Panel
             taskbarBg: "#2b2e37",
             taskbarBorder: "#3b3f4a",
             taskbarItemBg: "#3b3f4a",
             taskbarItemBgActive: "#4d9fff",
             taskbarItemText: "#aaaaaa",
             taskbarItemTextActive: "#ffffff",
-
-            // UI Elements
             buttonClose: "#ff5555",
             buttonMax: "#55ff55",
             buttonMin: "#ffff55",
             highlight: "#ffcc66",
-
-            // Content Areas
             contentBg: "#101317",
             contentText: "#dddddd",
             contentHighlight: "#ffcc66"
@@ -46,19 +37,16 @@ export const THEMES = {
             titleBarActive: "#363c4a",
             titleText: "#aaccff",
             titleTextActive: "#ffffff",
-
             taskbarBg: "rgba(20, 24, 32, 0.95)",
             taskbarBorder: "#333b4d",
             taskbarItemBg: "rgba(255, 255, 255, 0.05)",
             taskbarItemBgActive: "rgba(77, 180, 255, 0.2)",
             taskbarItemText: "#aaaaaa",
             taskbarItemTextActive: "#ffffff",
-
             buttonClose: "#ff5555",
             buttonMax: "#55ff55",
             buttonMin: "#ffff55",
             highlight: "#4db4ff",
-
             contentBg: "#0a0c10",
             contentText: "#aaccff",
             contentHighlight: "#4db4ff"
@@ -76,19 +64,16 @@ export const THEMES = {
             titleBarActive: "#000080",
             titleText: "#ffffff",
             titleTextActive: "#ffffff",
-
             taskbarBg: "#c0c0c0",
             taskbarBorder: "#ffffff",
             taskbarItemBg: "#c0c0c0",
             taskbarItemBgActive: "#e0e0e0",
             taskbarItemText: "#000000",
             taskbarItemTextActive: "#000000",
-
             buttonClose: "#c0c0c0",
             buttonMax: "#c0c0c0",
             buttonMin: "#c0c0c0",
             highlight: "#000080",
-
             contentBg: "#ffffff",
             contentText: "#000000",
             contentHighlight: "#000080"
@@ -99,8 +84,9 @@ export const THEMES = {
 
 export class ThemeManager {
     constructor() {
-        this.current = THEMES.ORIGINAL; // Set default back to Original
+        this.current = THEMES.ORIGINAL;
         this.fontFamily = "system-ui";
+        this.windowControls = "centeros"; // 'centeros', 'classic', 'retro'
     }
 
     setTheme(key) {
@@ -113,13 +99,13 @@ export class ThemeManager {
         this.fontFamily = family;
     }
 
-    get() {
-        return this.current.colors;
+    setWindowControls(style) {
+        this.windowControls = style;
     }
 
-    getStyle() {
-        return this.current.iconStyle;
-    }
+    get() { return this.current.colors; }
+    getStyle() { return this.current.iconStyle; }
+    getWindowControls() { return this.windowControls; }
 
     getFonts() {
         const f = this.fontFamily;

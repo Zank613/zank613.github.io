@@ -43,7 +43,7 @@ import { TaskManagerApp } from "./apps/taskManagerApp.js";
 
 appRegistry.register("settings", {
     title: "Settings",
-    preferredSize: { width: 500, height: 350 },
+    preferredSize: { width: 600, height: 350 },
     createInstance: () => new SettingsApp()
 });
 appRegistry.register("cases", {
@@ -58,7 +58,7 @@ appRegistry.register("citizen", {
 });
 appRegistry.register("id", {
     title: "ID_DB",
-    preferredSize: { width: 520, height: 360 },
+    preferredSize: { width: 600, height: 360 },
     createInstance: (data) => new IdDbApp(data)
 });
 appRegistry.register("police", {
@@ -68,7 +68,7 @@ appRegistry.register("police", {
 });
 appRegistry.register("sim", {
     title: "Sim_DB",
-    preferredSize: { width: 520, height: 360 },
+    preferredSize: { width: 600, height: 360 },
     createInstance: (data) => new SimDbApp(data)
 });
 appRegistry.register("tel", {
