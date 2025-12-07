@@ -1,12 +1,8 @@
 import { state } from "../state.js";
-import { TIME_CONFIG } from "../state.js";
-
-const DAY_IN_MINUTES = 24 * 60;
 
 export class AtmosphereManager {
     constructor(traceManager) {
         this.traceManager = traceManager;
-
         this.webcamActive = false;
         this.webcamTimer = 0;
         this.nextWebcamEvent = Math.random() * 60 + 30;
@@ -14,7 +10,6 @@ export class AtmosphereManager {
         this.glitchActive = false;
         this.glitchIntensity = 0;
         this.glitchTimer = 0;
-
         this.timeElapsedSinceTrace = 0;
         this.traceAttempted = false;
 
@@ -51,20 +46,6 @@ export class AtmosphereManager {
         }
 
         if (state.gameOver) return;
-
-        // Time Progression
-        const timeSpeed = state.miner && state.miner.running ? 10 : 1;
-        state.time.minutes = (state.time.minutes + dt * timeSpeed) % DAY_IN_MINUTES;
-
-        const currentMinute = Math.floor(state.time.minutes);
-
-        // Advance Day Logic
-        if (currentMinute < state.time.lastHourMark && currentMinute < 1) {
-            state.time.day += 1;
-            window.dispatchEvent(new CustomEvent("centeros-new-day"));
-            window.dispatchEvent(new CustomEvent("centeros-refresh-sites"));
-        }
-        state.time.lastHourMark = currentMinute;
 
         // Heat Decay
         this.timeElapsedSinceTrace += dt;
@@ -124,7 +105,6 @@ export class AtmosphereManager {
             ctx.fillRect(0, Math.random() * height, width, Math.random() * 50);
         }
     }
-
     handleTrespasserRisk(e) {
         const url = e.detail.url;
         if (url === "darkesttrench.w3") {
