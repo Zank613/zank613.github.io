@@ -171,7 +171,6 @@ export class WindowManager {
                     return true;
                 }
 
-                // Pass global coordinates (x, y) and the content rect to the app
                 const contentRect = this._getContentRect(win);
                 if (win.appInstance && win.appInstance.handleClick) {
                     win.appInstance.handleClick(x, y, contentRect);
@@ -229,6 +228,15 @@ export class WindowManager {
 
     pointerUp() { this._dragState = null; }
 
+    handleWheel(e) {
+        const win = this.windows.find(w => w.id === this.activeWindowId);
+        if (win && win.appInstance && win.appInstance.handleWheel) {
+            const contentRect = this._getContentRect(win);
+            // Only scroll if mouse is roughly over window (optional check)
+            win.appInstance.handleWheel(e.deltaY, contentRect);
+        }
+    }
+
     handleKey(e) {
         const win = this.windows.find(w => w.id === this.activeWindowId);
         if (win && win.appInstance && win.appInstance.handleKey) {
@@ -260,6 +268,7 @@ export class WindowManager {
             const isActive = win.id === this.activeWindowId;
             const r = { x: win.x, y: win.y, w: win.width, h: win.height };
 
+            // Draw Window Frame & Title
             ctx.shadowColor = "rgba(0,0,0,0.5)";
             ctx.shadowBlur = isActive ? 20 : 5;
             ctx.fillStyle = colors.windowBg;
@@ -281,14 +290,46 @@ export class WindowManager {
 
             this._renderControls(ctx, win, colors);
 
+            // Draw Content
             const contentRect = this._getContentRect(win);
             ctx.save();
             ctx.beginPath();
             ctx.rect(contentRect.x, contentRect.y, contentRect.width, contentRect.height);
             ctx.clip();
-            if (win.appInstance && win.appInstance.render) {
+
+            // Apply translation so the app draws "scrolled up"
+            if (win.appInstance) {
+                const scrollY = win.appInstance.scrollY || 0;
+                ctx.translate(0, -scrollY);
+
                 win.appInstance.render(ctx, contentRect);
+
+                ctx.translate(0, scrollY); // Restore for scrollbar
             }
+
+            // Draw Scrollbar
+            if (win.appInstance && win.appInstance.contentHeight > contentRect.height) {
+                const totalH = win.appInstance.contentHeight;
+                const visibleH = contentRect.height;
+                const scrollY = win.appInstance.scrollY || 0;
+
+                const barWidth = 6;
+                const trackH = visibleH;
+                const thumbH = Math.max(20, (visibleH / totalH) * trackH);
+                const thumbY = (scrollY / (totalH - visibleH)) * (trackH - thumbH);
+
+                const barX = contentRect.x + contentRect.width - barWidth - 2;
+                const barY = contentRect.y;
+
+                // Track
+                ctx.fillStyle = "rgba(0,0,0,0.2)";
+                ctx.fillRect(barX, barY, barWidth, trackH);
+
+                // Thumb
+                ctx.fillStyle = colors.highlight || "#888";
+                ctx.fillRect(barX, barY + thumbY, barWidth, thumbH);
+            }
+
             ctx.restore();
         }
     }

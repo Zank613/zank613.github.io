@@ -124,10 +124,20 @@ export class Desktop {
     handleTaskbarClick(x, y) {
         const isHorizontal = (this.taskbarPosition === 'top' || this.taskbarPosition === 'bottom');
         const startBtnSize = 40;
+
+        // Start Menu (Left/Top)
         const isStart = isHorizontal ? (x < this.taskbarRect.x + startBtnSize) : (y < this.taskbarRect.y + startBtnSize);
         if (isStart) {
             console.log("Start Menu Clicked (ToDo)");
             return;
+        }
+
+        if (isHorizontal) {
+            const wifiX = this.taskbarRect.w - 85;
+            if (x >= wifiX - 15 && x <= wifiX + 15) {
+                this.openApp("net");
+                return;
+            }
         }
 
         for (const item of this.renderedWindows) {
@@ -279,9 +289,31 @@ export class Desktop {
             }
         }
 
+        // Draw Custom Panel (Clock, Stress, etc.)
         if (isHorizontal) {
             if (this.customPanelRenderer) {
                 this.customPanelRenderer(ctx, tr.w, tr.h, this.taskbarSize);
+            }
+
+            const wifiX = tr.w - 85;
+            const wifiY = (this.taskbarPosition === 'bottom') ? tr.y + tr.h/2 : tr.y + tr.h/2;
+
+            ctx.fillStyle = "#ffffff";
+            ctx.beginPath();
+            ctx.arc(wifiX, wifiY + 2, 2, 0, Math.PI*2); // Dot
+            ctx.fill();
+
+            ctx.strokeStyle = "#ffffff";
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(wifiX, wifiY + 2, 6, Math.PI * 1.25, Math.PI * 1.75); // Small arc
+            ctx.stroke();
+
+            const net = this.networkManager.getConnectedNetwork();
+            if (net) {
+                ctx.beginPath();
+                ctx.arc(wifiX, wifiY + 2, 10, Math.PI * 1.25, Math.PI * 1.75); // Big arc
+                ctx.stroke();
             }
         }
         ctx.restore();

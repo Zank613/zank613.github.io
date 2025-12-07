@@ -349,6 +349,11 @@ window.addEventListener("keydown", (e) => {
     wm.handleKey(e);
 });
 
+canvas.addEventListener("wheel", (e) => {
+    e.preventDefault(); // Prevent browser page scrolling
+    wm.handleWheel(e);
+}, { passive: false });
+
 // Time & Economy Logic
 function advanceTimeAndEconomy(dt) {
     const deltaMinutes = dt * TIME_SPEED;

@@ -2,10 +2,11 @@ import { themeManager } from "../os/theme.js";
 
 export class BaseApp {
     constructor() {
-        this.windowManager = null; // Reference to WM
+        this.windowManager = null;
+        this.scrollY = 0;       // Current vertical scroll position
+        this.contentHeight = 0; // Total height of the content
     }
 
-    // Called by main.js when app is launched
     setWindowManager(wm) {
         this.windowManager = wm;
     }
@@ -21,20 +22,44 @@ export class BaseApp {
 
     handleClick(x, y, rect) {}
 
+    /**
+     * New: Handle mouse wheel events.
+     * @param {number} deltaY - The scroll amount from the event
+     * @param {Object} rect - The visible content area
+     */
+    handleWheel(deltaY, rect) {
+        if (this.contentHeight <= rect.height) return;
+
+        this.scrollY += deltaY;
+
+        // Clamp scroll
+        const maxScroll = this.contentHeight - rect.height;
+        if (this.scrollY < 0) this.scrollY = 0;
+        if (this.scrollY > maxScroll) this.scrollY = maxScroll;
+    }
+
     // --- Helpers ---
 
     getColors() { return themeManager.get(); }
     getFonts() { return themeManager.getFonts(); }
 
+    /**
+     * Clears the background.
+     */
     clear(ctx, rect, color) {
         ctx.fillStyle = color || this.getColors().windowBg;
-        ctx.fillRect(rect.x, rect.y, rect.width, rect.height);
+        // We draw at y + scrollY because the context is shifted up by -scrollY
+        ctx.fillRect(rect.x, rect.y + this.scrollY, rect.width, rect.height);
     }
 
+    /**
+     * Returns coordinates relative to the content area, ACCOUNTING FOR SCROLL.
+     * If you scroll down 50px, and click at y=100 on screen, that is actually y=150 in the content.
+     */
     getLocalCoords(globalX, globalY, contentRect) {
         return {
             x: globalX - contentRect.x,
-            y: globalY - contentRect.y
+            y: (globalY - contentRect.y) + this.scrollY
         };
     }
 
