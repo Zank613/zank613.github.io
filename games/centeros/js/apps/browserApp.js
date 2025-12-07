@@ -4,7 +4,8 @@ import { BaseApp } from "../core/baseApp.js";
 const SITE_ROUTES = {
     "home": "sites/pleasefindthem.html",
     "pleasefindthem.com": "sites/pleasefindthem.html",
-    "darkesttrench.w3": "sites/darkesttrench.html"
+    "darkesttrench.w3": "sites/darkesttrench.html",
+    "thecitypulse.w3": "sites/pleasefindthem.html"
 };
 
 const DARK_SITES = new Set(["darkesttrench.w3"]);
@@ -18,25 +19,27 @@ export class BrowserApp extends BaseApp {
     constructor() {
         super();
         this.currentUrl = "home";
+        this.pageTitle = "New Tab";
+
         this.blocks = [];
         this.linkRegions = [];
         this.anchorMap = {};
-        this.message = "";
-        this.loading = false;
-        this.error = null;
-        this.scrollOffset = 0;
-        this.maxScroll = 0;
+
         this.history = [];
         this.historyIndex = -1;
+        this.loading = false;
+        this.loadingProgress = 0;
+        this.error = null;
+        this.message = "";
+
         this.addressFocused = false;
         this.addressBuffer = this.currentUrl;
         this.bookmarks = new Set();
-        this.showBookmarks = false;
-        this.bookmarkRegions = [];
+        this.secureStatus = "secure";
 
-        this.uiRects = { address: null, star: null, bookmarks: null };
+        this.ui = {};
 
-        this.navigateTo(this.currentUrl, true);
+        this.navigateTo("home", true);
     }
 
     isAroundRouterInstalled() { return !!(state.router && state.router.owned); }
@@ -47,64 +50,8 @@ export class BrowserApp extends BaseApp {
         state.policeHeat = Math.max(0, Math.min(100, (state.policeHeat || 0) + amount));
     }
 
-    maybeTriggerBrowserTrace(chance, baseDifficulty = 1) {
-        if (!chance || chance <= 0) return;
-        if (Math.random() >= chance) return;
-        const difficulty = baseDifficulty || (Math.floor((state.policeHeat || 0) / 30) + 1);
-        window.dispatchEvent(new CustomEvent("centeros-trigger-trace", {
-            detail: { source: "browser", difficulty }
-        }));
-    }
-
-    assessConnectionRisk(urlKey) {
-        const baseRisk = SITE_RISK[urlKey] ?? 0.1;
-        const vpnTier = this.getVpnTier();
-        const routerOwned = this.isAroundRouterInstalled();
-        const heat = state.policeHeat || 0;
-
-        let vpnFactor = 1.0;
-        if (vpnTier === 1) vpnFactor = 0.8;
-        else if (vpnTier === 2) vpnFactor = 0.6;
-        else if (vpnTier === 3) vpnFactor = 0.45;
-        else if (vpnTier >= 4) vpnFactor = 0.35;
-
-        let routerFactor = 1.0;
-        if (routerOwned && DARK_SITES.has(urlKey)) {
-            routerFactor = 0.75;
-        }
-
-        const effectiveRisk = baseRisk * vpnFactor * routerFactor * (0.5 + (heat / 100));
-
-        return {
-            errorChance: Math.min(0.55, effectiveRisk * 0.6),
-            errorMessage: "Connection Reset.",
-            heatOnConnect: 0.5 + effectiveRisk * 4,
-            heatOnError: 2 + effectiveRisk * 6,
-            traceChance: Math.max(0, effectiveRisk - 0.35),
-            traceDifficulty: 1 + Math.floor(effectiveRisk * 4)
-        };
-    }
-
-    isBookmarked(urlKey) { return this.bookmarks.has(urlKey); }
-
-    toggleBookmark(urlKey) {
-        if (!urlKey) return;
-        if (this.bookmarks.has(urlKey)) {
-            this.bookmarks.delete(urlKey);
-            if (this.bookmarks.size === 0) this.showBookmarks = false;
-        } else {
-            this.bookmarks.add(urlKey);
-        }
-    }
-
     navigateTo(urlKey, pushHistory = true) {
         if (!urlKey) return;
-        this.currentUrl = urlKey;
-        this.scrollOffset = 0;
-        this.message = "";
-        this.error = null;
-
-        if (!this.addressFocused) this.addressBuffer = this.currentUrl;
 
         if (pushHistory) {
             if (this.historyIndex < this.history.length - 1) {
@@ -113,64 +60,142 @@ export class BrowserApp extends BaseApp {
             this.history.push(urlKey);
             this.historyIndex = this.history.length - 1;
         }
+
+        this.currentUrl = urlKey;
+        this.scrollY = 0;
+        this.error = null;
+        this.pageTitle = urlKey;
+        if (!this.addressFocused) this.addressBuffer = this.currentUrl;
+
         this.loadUrl(urlKey);
     }
 
+    goBack() {
+        if (this.historyIndex > 0) {
+            this.historyIndex--;
+            this.navigateTo(this.history[this.historyIndex], false);
+        }
+    }
+
+    goForward() {
+        if (this.historyIndex < this.history.length - 1) {
+            this.historyIndex++;
+            this.navigateTo(this.history[this.historyIndex], false);
+        }
+    }
+
+    refresh() {
+        this.loadUrl(this.currentUrl);
+    }
+
     async loadUrl(urlKey) {
-        const path = SITE_ROUTES[urlKey];
         this.loading = true;
-        this.error = null;
+        this.loadingProgress = 0.1;
+        this.message = `Connecting to ${urlKey}...`;
         this.blocks = [];
         this.linkRegions = [];
-        this.anchorMap = {};
+        this.secureStatus = "secure";
 
+        const loadingInterval = setInterval(() => {
+            this.loadingProgress += Math.random() * 0.2;
+            if (this.loadingProgress > 0.8) clearInterval(loadingInterval);
+        }, 100);
+
+        const path = SITE_ROUTES[urlKey];
         if (!path) {
+            clearInterval(loadingInterval);
             this.loading = false;
-            this.error = `Unknown address: ${urlKey}`;
+            this.error = `ERR_NAME_NOT_RESOLVED`;
+            this.message = "Host unreachable.";
+            this.secureStatus = "danger";
             return;
-        }
-
-        if (DARK_SITES.has(urlKey)) {
-            if (!this.isAroundRouterInstalled()) {
-                this.loading = false;
-                this.error = "Access denied.\nAroundRouter not detected.";
-                return;
-            }
-            if (this.getVpnTier() === 0) {
-                this.message = "AroundRouter active, but no VPN.";
-                this.bumpHeat(3);
-            }
         }
 
         const profile = this.assessConnectionRisk(urlKey);
-        this.bumpHeat(profile.heatOnConnect);
 
-        if (Math.random() < profile.errorChance) {
-            this.loading = false;
-            this.error = profile.errorMessage;
-            this.bumpHeat(profile.heatOnError);
-            this.maybeTriggerBrowserTrace(profile.traceChance, profile.traceDifficulty);
-            return;
+        if (DARK_SITES.has(urlKey)) {
+            this.secureStatus = "warning";
+            if (!this.isAroundRouterInstalled()) {
+                clearInterval(loadingInterval);
+                this.loading = false;
+                this.error = "ERR_PROTOCOL_REQUIRED";
+                this.message = "AroundRouter Handshake Failed.";
+                this.secureStatus = "danger";
+                return;
+            }
+            if (this.getVpnTier() < 2) {
+                this.secureStatus = "danger";
+                this.message = "⚠ UNMASKED TRAFFIC DETECTED";
+            } else {
+                this.message = `Encrypted Tunnel (VPN${this.getVpnTier()})`;
+            }
+
+            if (Math.random() < profile.trespasserRisk) {
+                window.dispatchEvent(new CustomEvent("centeros-trespasser-risk", {
+                    detail: { source: "browser", url: urlKey }
+                }));
+            }
+        } else {
+            this.message = "TLS Handshake Established.";
         }
+
+        this.bumpHeat(profile.heatOnConnect);
 
         try {
             const resp = await fetch(path);
             if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
             const htmlText = await resp.text();
+
+            clearInterval(loadingInterval);
+            this.loading = false;
+            this.loadingProgress = 1.0;
+
             this.parseHtml(htmlText);
-            this.loading = false;
-            this.maybeTriggerBrowserTrace(profile.traceChance * 0.4, profile.traceDifficulty);
+            this.injectDynamicContent(urlKey);
+
+            if (Math.random() < profile.traceChance) {
+                const difficulty = profile.traceDifficulty || 1;
+                window.dispatchEvent(new CustomEvent("centeros-trigger-trace", {
+                    detail: { source: "browser", difficulty }
+                }));
+            }
+
         } catch (e) {
+            clearInterval(loadingInterval);
             this.loading = false;
-            this.error = `Failed to load: ${urlKey}`;
+            this.error = "ERR_CONNECTION_TIMED_OUT";
+            this.secureStatus = "danger";
         }
+    }
+
+    assessConnectionRisk(urlKey) {
+        const baseRisk = SITE_RISK[urlKey] ?? 0.1;
+        const vpnTier = this.getVpnTier();
+        const routerOwned = this.isAroundRouterInstalled();
+
+        let routerFactor = 1.0;
+        if (routerOwned && DARK_SITES.has(urlKey)) routerFactor = 0.75;
+
+        const effectiveRisk = baseRisk * (1.0 - (vpnTier * 0.1)) * routerFactor;
+
+        return {
+            errorChance: 0,
+            heatOnConnect: effectiveRisk * 5,
+            heatOnError: 5,
+            traceChance: Math.max(0, effectiveRisk - 0.4),
+            traceDifficulty: 1 + Math.floor(effectiveRisk * 4),
+            trespasserRisk: urlKey === "darkesttrench.w3" && !routerOwned ? 0.3 : 0.0
+        };
     }
 
     parseHtml(htmlText) {
         const parser = new DOMParser();
         const doc = parser.parseFromString(htmlText, "text/html");
-        const body = doc.body;
 
+        const titleTag = doc.querySelector("title");
+        if (titleTag) this.pageTitle = titleTag.textContent;
+
+        const body = doc.body;
         const blocks = [];
         const anchorMap = {};
 
@@ -189,27 +214,15 @@ export class BrowserApp extends BaseApp {
         const walk = (node) => {
             if (node.nodeType !== 1) return;
             const tag = node.tagName.toLowerCase();
-            const id = node.id && node.id.trim();
+            const id = node.id ? node.id.trim() : null;
+            const blockIndex = blocks.length;
+            if (id) anchorMap["#" + id] = blockIndex;
 
-            if (tag === "h1" || tag === "h2") {
-                const text = node.textContent.trim();
-                const blockIndex = blocks.length;
-                if (id) anchorMap["#" + id] = blockIndex;
-                blocks.push({ type: "heading", level: tag === "h1" ? 1 : 2, text });
-            } else if (tag === "p") {
-                const text = gatherText(node).trim();
-                const blockIndex = blocks.length;
-                if (id) anchorMap["#" + id] = blockIndex;
-                blocks.push({ type: "paragraph", text });
-            } else if (tag === "a") {
-                const href = node.getAttribute("href") || "";
-                const text = node.textContent.trim() || href;
-                const blockIndex = blocks.length;
-                if (id) anchorMap["#" + id] = blockIndex;
-                blocks.push({ type: "link", text, href });
-            } else if (node.children) {
-                Array.from(node.children).forEach(walk);
-            }
+            if (tag === "h1") blocks.push({ type: "heading", level: 1, text: node.textContent.trim() });
+            else if (tag === "h2") blocks.push({ type: "heading", level: 2, text: node.textContent.trim() });
+            else if (tag === "p") blocks.push({ type: "paragraph", text: gatherText(node).trim() });
+            else if (tag === "a") blocks.push({ type: "link", text: node.textContent.trim(), href: node.getAttribute("href") || "" });
+            else if (node.children) Array.from(node.children).forEach(walk);
         };
 
         Array.from(body.children).forEach(walk);
@@ -217,150 +230,277 @@ export class BrowserApp extends BaseApp {
         this.anchorMap = anchorMap;
     }
 
+    injectDynamicContent(urlKey) {
+        window.dispatchEvent(new CustomEvent("centeros-refresh-sites"));
+        const siteData = state.world.sites[urlKey];
+        if (!siteData) return;
+
+        if (urlKey === "pleasefindthem.com" && siteData.posts) {
+            this.blocks.push({ type: "heading", level: 2, text: "Recent Threads" });
+            siteData.posts.forEach(p => {
+                this.blocks.push({ type: "paragraph", text: `------------------------------------------------`, color: "#555" });
+                this.blocks.push({ type: "heading", level: 2, text: p.title });
+                this.blocks.push({ type: "paragraph", text: `User: ${p.author} [Reward: ${p.reward} E€E]` });
+                this.blocks.push({ type: "paragraph", text: p.content });
+
+                const isAccepted = state.acceptedJobs.includes(p.id);
+                if (isAccepted) this.blocks.push({ type: "paragraph", text: "[ JOB ACTIVE ]", color: "#00ff00" });
+                else this.blocks.push({ type: "link", text: `>> ACCEPT CONTRACT`, href: `cmd:accept_job:${p.id}`, color: "#ffcc00" });
+            });
+        }
+
+        if (urlKey === "darkesttrench.w3" && siteData.entries) {
+            this.blocks.push({ type: "heading", level: 1, text: "Live Feeds" });
+            siteData.entries.forEach(e => {
+                if (e.type === "wiki") {
+                    const color = e.dangerLevel > 4 ? "#ff4444" : "#aaaaaa";
+                    this.blocks.push({ type: "paragraph", text: `[RISK LEVEL ${e.dangerLevel}]`, color });
+                    this.blocks.push({ type: "heading", level: 2, text: e.title });
+                    this.blocks.push({ type: "paragraph", text: e.content });
+                    this.blocks.push({ type: "paragraph", text: "" });
+                }
+            });
+        }
+    }
+
     handleKey(e) {
         if (e.type !== "keydown") return;
-
         if (this.addressFocused) {
             if (e.key === "Enter") {
                 const raw = this.addressBuffer.trim();
                 if (raw) {
-                    if (SITE_ROUTES[raw]) this.navigateTo(raw, true);
-                    else this.message = `Unknown address: ${raw}`;
+                    if(SITE_ROUTES[raw]) this.navigateTo(raw, true);
+                    else this.message = "DNS Lookup Failed.";
                 }
                 this.addressFocused = false;
             } else if (e.key === "Backspace") {
                 this.addressBuffer = this.addressBuffer.slice(0, -1);
-            } else if (e.key.length === 1 && !e.ctrlKey && !e.altKey) {
+            } else if (e.key.length === 1) {
                 this.addressBuffer += e.key;
             } else if (e.key === "Escape") {
                 this.addressFocused = false;
                 this.addressBuffer = this.currentUrl;
             }
-            return;
         }
-
-        if (e.key === "ArrowDown") this.scrollOffset = Math.min(this.scrollOffset + 20, this.maxScroll);
-        if (e.key === "ArrowUp") this.scrollOffset = Math.max(this.scrollOffset - 20, 0);
-        if (e.key === "l") { this.addressFocused = true; this.addressBuffer = this.currentUrl; }
     }
 
     handleClick(globalX, globalY, contentRect) {
         const { x, y } = this.getLocalCoords(globalX, globalY, contentRect);
-        const hr = this.uiRects;
+        const ui = this.ui;
 
-        // Address Bar
-        if (hr.address && this.isInside(x, y, hr.address.x, hr.address.y, hr.address.w, hr.address.h)) {
+        // 1. Navigation Bar Clicks (Static Y)
+        // Since getLocalCoords adds scrollY, we subtract it to check static UI elements
+        const staticY = y - this.scrollY;
+
+        if (this.isInside(x, staticY, ui.back.x, ui.back.y, ui.back.w, ui.back.h)) {
+            this.goBack(); return;
+        }
+        if (this.isInside(x, staticY, ui.fwd.x, ui.fwd.y, ui.fwd.w, ui.fwd.h)) {
+            this.goForward(); return;
+        }
+        if (this.isInside(x, staticY, ui.refresh.x, ui.refresh.y, ui.refresh.w, ui.refresh.h)) {
+            this.refresh(); return;
+        }
+        if (this.isInside(x, staticY, ui.home.x, ui.home.y, ui.home.w, ui.home.h)) {
+            this.navigateTo("home", true); return;
+        }
+        if (this.isInside(x, staticY, ui.address.x, ui.address.y, ui.address.w, ui.address.h)) {
             this.addressFocused = true;
             this.addressBuffer = this.currentUrl;
             return;
         }
 
-        // Bookmark Star
-        if (hr.star && this.isInside(x, y, hr.star.x, hr.star.y, hr.star.w, hr.star.h)) {
-            this.toggleBookmark(this.currentUrl);
-            return;
-        }
-
-        // Links
+        // 2. Content Clicks (Scrolled Y)
         for (const link of this.linkRegions) {
             if (this.isInside(x, y, link.x, link.y, link.w, link.h)) {
-                if (SITE_ROUTES[link.href]) this.navigateTo(link.href, true);
-                else if (link.href.startsWith("#")) {
+                if (link.href.startsWith("cmd:")) {
+                    const parts = link.href.split(":");
+                    if (parts[1] === "accept_job" && !state.acceptedJobs.includes(parts[2])) {
+                        state.acceptedJobs.push(parts[2]);
+                        this.message = "Contract Accepted.";
+                        this.refresh();
+                    }
+                } else if (SITE_ROUTES[link.href]) {
+                    this.navigateTo(link.href, true);
+                } else if (link.href.startsWith("#")) {
                     const idx = this.anchorMap[link.href];
-                    if (idx != null) this.scrollToBlock(idx);
+                    if (idx != null) {
+                        let estY = 80;
+                        for(let i=0; i<idx && i<this.blocks.length; i++) estY += 24;
+                        this.scrollY = Math.max(0, estY - 80);
+                    }
                 }
                 return;
             }
         }
     }
 
-    scrollToBlock(idx) {
-        let y = 32; // Header offset
-        for (let i = 0; i < idx && i < this.blocks.length; i++) {
-            y += 20; // Very rough calc, real implementation would pre-calculate block heights
-        }
-        this.scrollOffset = Math.max(0, y - 50);
-    }
-
     render(ctx, rect) {
-        // Browser specific dark bg
-        this.clear(ctx, rect, "#080808");
+        super.render(ctx, rect);
 
-        ctx.save();
-        ctx.translate(rect.x, rect.y);
+        const tabH = 34;
+        const navH = 40;
+        const statusH = 24;
+        const contentTop = tabH + navH;
 
-        const headerHeight = 28;
-        ctx.fillStyle = "#141414";
-        ctx.fillRect(0, 0, rect.width, headerHeight);
+        // Static Y position for drawing
+        const staticY = rect.y + this.scrollY;
 
-        // Address Bar Geometry
-        const padding = 8;
-        const addressW = rect.width - 60;
-        this.uiRects.address = { x: padding, y: 6, w: addressW, h: headerHeight - 12 };
-        this.uiRects.star = { x: padding + addressW + 6, y: 6, w: 18, h: 18 };
+        // 1. Draw Tab Bar
+        ctx.fillStyle = "#0c0e12";
+        ctx.fillRect(rect.x, staticY, rect.width, tabH);
 
-        // Draw Address Box
-        ctx.strokeStyle = this.addressFocused ? "#66aaff" : "#333333";
-        ctx.fillStyle = "#000000";
-        ctx.fillRect(this.uiRects.address.x, this.uiRects.address.y, this.uiRects.address.w, this.uiRects.address.h);
-        ctx.strokeRect(this.uiRects.address.x, this.uiRects.address.y, this.uiRects.address.w, this.uiRects.address.h);
+        // Active Tab
+        ctx.fillStyle = "#20222a";
+        ctx.beginPath();
+        ctx.moveTo(rect.x + 8, staticY + tabH);
+        ctx.lineTo(rect.x + 8, staticY + 8);
+        ctx.lineTo(rect.x + 180, staticY + 8);
+        ctx.lineTo(rect.x + 180, staticY + tabH);
+        ctx.fill();
 
-        // Text
-        ctx.fillStyle = "#dddddd";
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "12px system-ui";
+        ctx.textAlign = "left";
+        ctx.fillText(this.pageTitle.substring(0, 20), rect.x + 20, staticY + 22);
+
+        // 2. Draw Navigation Bar
+        const navY = staticY + tabH;
+        ctx.fillStyle = "#20222a";
+        ctx.fillRect(rect.x, navY, rect.width, navH);
+
+        // Define UI Regions in LOCAL COORDINATES (relative to content top-left)
+        // Note: The click handler will check against these local X/Y values.
+        this.ui = {
+            back: { x: 10, y: tabH + 8, w: 24, h: 24 },
+            fwd: { x: 40, y: tabH + 8, w: 24, h: 24 },
+            refresh: { x: 70, y: tabH + 8, w: 24, h: 24 },
+            home: { x: 100, y: tabH + 8, w: 24, h: 24 },
+            address: { x: 135, y: tabH + 5, w: rect.width - 150, h: 30 }
+        };
+
+        // Render Buttons (Drawing requires adding rect.x / staticY)
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.font = "16px system-ui";
+
+        // Helper to draw
+        const drawUi = (elem, text) => {
+            ctx.fillText(text, rect.x + elem.x + 12, staticY + elem.y + 12);
+        };
+
+        ctx.fillStyle = this.historyIndex > 0 ? "#fff" : "#555";
+        drawUi(this.ui.back, "◀");
+
+        ctx.fillStyle = this.historyIndex < this.history.length - 1 ? "#fff" : "#555";
+        drawUi(this.ui.fwd, "▶");
+
+        ctx.fillStyle = "#fff";
+        drawUi(this.ui.refresh, "⟳");
+        drawUi(this.ui.home, "⌂");
+
+        // Render Address Bar
+        const addr = this.ui.address;
+        const drawAddrX = rect.x + addr.x;
+        const drawAddrY = staticY + addr.y;
+
+        ctx.fillStyle = "#15171d";
+        ctx.beginPath();
+        ctx.roundRect(drawAddrX, drawAddrY, addr.w, addr.h, 15);
+        ctx.fill();
+
+        ctx.textAlign = "left";
+        ctx.font = "13px system-ui";
+        const txt = this.addressFocused ? this.addressBuffer : this.currentUrl;
+
+        let lockColor = "#888";
+        if (this.secureStatus === "secure") lockColor = "#4caf50";
+        if (this.secureStatus === "warning") lockColor = "#ff9800";
+        if (this.secureStatus === "danger") lockColor = "#f44336";
+
+        ctx.fillStyle = lockColor;
+        ctx.fillText("🔒", drawAddrX + 10, drawAddrY + 16);
+
+        ctx.fillStyle = this.addressFocused ? "#fff" : "#aaa";
+        ctx.fillText(txt, drawAddrX + 30, drawAddrY + 16);
+
+        // 3. Render Status Bar
+        const statY = staticY + rect.height - statusH;
+        ctx.fillStyle = "#2b2e37";
+        ctx.fillRect(rect.x, statY, rect.width, statusH);
+
+        ctx.fillStyle = "#888";
         ctx.font = "11px system-ui";
         ctx.textAlign = "left";
-        ctx.textBaseline = "middle";
-        ctx.fillText(this.addressFocused ? this.addressBuffer : this.currentUrl, this.uiRects.address.x + 4, 18);
+        ctx.fillText(this.message, rect.x + 10, statY + 12);
 
-        // Star
-        ctx.fillStyle = this.isBookmarked(this.currentUrl) ? "#ffd700" : "#555555";
-        ctx.textAlign = "center";
-        ctx.font = "14px system-ui";
-        ctx.fillText("★", this.uiRects.star.x + 9, 20);
+        // 4. Content Area
+        const contentY = rect.y + contentTop;
 
-        // Content
         if (this.loading) {
-            ctx.fillStyle = "#dddddd";
-            ctx.fillText("Loading...", 20, 50);
-        } else if (this.error) {
-            ctx.fillStyle = "#ff6666";
-            ctx.fillText(this.error, 20, 50);
-        } else {
-            let y = headerHeight + 4 - this.scrollOffset;
-            ctx.textAlign = "left";
-            ctx.textBaseline = "top";
-            this.linkRegions = [];
+            ctx.fillStyle = "#4d9fff";
+            ctx.fillRect(rect.x, contentY, rect.width * this.loadingProgress, 2);
+        }
 
-            for (const block of this.blocks) {
-                if (block.type === "heading") {
-                    ctx.fillStyle = "#fff";
-                    ctx.font = block.level === 1 ? "14px system-ui" : "12px system-ui";
-                    ctx.fillText(block.text, padding, y);
-                    y += 24;
-                } else if (block.type === "paragraph") {
-                    ctx.fillStyle = "#ccc";
-                    ctx.font = "11px system-ui";
-                    ctx.fillText(block.text, padding, y);
-                    // Approx wrap height logic omitted for brevity, assuming simple spacing
-                    y += 16 * (Math.floor(block.text.length / 80) + 1) + 6;
-                } else if (block.type === "link") {
-                    ctx.fillStyle = "#6ab0ff";
-                    ctx.font = "11px system-ui";
-                    ctx.fillText(block.text, padding, y);
-                    const w = ctx.measureText(block.text).width;
-                    this.linkRegions.push({ x: padding, y, w, h: 14, href: block.href });
-                    y += 16;
+        if (this.error) {
+            ctx.save();
+            ctx.translate(rect.x, contentY + 20);
+            ctx.fillStyle = "#ff5555";
+            ctx.font = "bold 20px system-ui";
+            ctx.fillText("Connection Error", 40, 40);
+            ctx.fillStyle = "#aaa";
+            ctx.font = "14px system-ui";
+            ctx.fillText(`Code: ${this.error}`, 40, 70);
+            ctx.restore();
+            return;
+        }
+
+        this.linkRegions = [];
+        let y = contentTop + 20;
+
+        ctx.textAlign = "left";
+        ctx.textBaseline = "top";
+
+        for (const block of this.blocks) {
+            const drawY = rect.y + y;
+
+            if(block.type === "heading") {
+                ctx.fillStyle = "#fff";
+                ctx.font = block.level===1 ? "bold 22px system-ui" : "bold 16px system-ui";
+                ctx.fillText(block.text, rect.x + 20, drawY);
+                y += block.level===1 ? 40 : 30;
+            }
+            else if (block.type === "paragraph") {
+                ctx.fillStyle = block.color || "#ccc";
+                ctx.font = "13px system-ui";
+                const lineHeight = 20;
+
+                const words = block.text.split(" ");
+                let line = "";
+                for(let w of words) {
+                    if (ctx.measureText(line + w).width > rect.width - 60) {
+                        ctx.fillText(line, rect.x + 20, rect.y + y);
+                        line = "";
+                        y += lineHeight;
+                    }
+                    line += w + " ";
                 }
+                ctx.fillText(line, rect.x + 20, rect.y + y);
+                y += lineHeight + 10;
+            }
+            else if (block.type === "link") {
+                ctx.fillStyle = block.color || "#6ab0ff";
+                ctx.font = "13px system-ui";
+                const w = ctx.measureText(block.text).width;
+
+                ctx.fillText(block.text, rect.x + 20, rect.y + y);
+                ctx.fillRect(rect.x + 20, rect.y + y + 16, w, 1);
+
+                this.linkRegions.push({ x: 20, y: y, w, h: 16, href: block.href });
+                y += 24;
             }
         }
 
-        if (this.message) {
-            ctx.fillStyle = "#ffaa66";
-            ctx.textAlign = "left";
-            ctx.textBaseline = "bottom";
-            ctx.fillText(this.message, 10, rect.height - 4);
-        }
-
-        ctx.restore();
+        this.contentHeight = y + statusH + 20;
     }
 }

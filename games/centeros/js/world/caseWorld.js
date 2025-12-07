@@ -92,6 +92,7 @@ function generateCitizen(id) {
             emails: [],
             apps: []
         },
+        relationships: [],
         isLinkedToCase: false,
         case_relevance: "none"
     };
@@ -103,18 +104,22 @@ function tagsIntersect(a, b) {
     return a.some(tag => b.includes(tag));
 }
 
-function attachEvidenceToCitizen(citizen, complaintTemplate) {
+function createRelationship(c1, c2, type) {
+    c1.relationships.push({ targetId: c2.id, name: `${c2.name} ${c2.surname}`, type });
+    c2.relationships.push({ targetId: c1.id, name: `${c1.name} ${c1.surname}`, type });
+}
+
+function attachEvidenceToCitizen(citizen, complaintTemplate, citizensList) {
     const tags = complaintTemplate.evidence_tags || [];
 
-    const texts = EVIDENCE_SNIPPETS.texts.filter(s =>
-        tagsIntersect(s.tags, tags)
-    );
-    const emails = EVIDENCE_SNIPPETS.emails.filter(s =>
-        tagsIntersect(s.tags, tags)
-    );
-    const police = EVIDENCE_SNIPPETS.police_records.filter(s =>
-        tagsIntersect(s.tags, tags)
-    );
+    // Get Relevant Evidence
+    const texts = EVIDENCE_SNIPPETS.texts.filter(s => tagsIntersect(s.tags, tags));
+    const emails = EVIDENCE_SNIPPETS.emails.filter(s => tagsIntersect(s.tags, tags));
+    const police = EVIDENCE_SNIPPETS.police_records.filter(s => tagsIntersect(s.tags, tags));
+
+    // Get Noise Evidence (Benign)
+    const noiseTexts = EVIDENCE_SNIPPETS.texts.filter(s => s.tags.includes("noise"));
+    const noiseEmails = EVIDENCE_SNIPPETS.emails.filter(s => s.tags.includes("noise"));
 
     function pickSome(arr, maxCount) {
         const out = [];
@@ -128,33 +133,45 @@ function attachEvidenceToCitizen(citizen, complaintTemplate) {
         return out;
     }
 
-    citizen.digital.texts = pickSome(texts, 2).map(s => ({
-        id: s.id,
-        content: s.template
-    }));
+    // 30% chance to plant text evidence on a partner/associate instead of the suspect
+    let targetForTexts = citizen;
+    if (citizen.relationships.length > 0 && Math.random() < 0.3) {
+        const rel = citizen.relationships[0];
+        const partner = citizensList.find(c => c.id === rel.targetId);
+        if (partner) targetForTexts = partner;
+    }
 
-    citizen.digital.emails = pickSome(emails, 2).map(s => ({
-        id: s.id,
-        subject: s.subject,
-        content: s.template
-    }));
+    // Add Incriminating Texts
+    const incrimTexts = pickSome(texts, 2).map(s => ({ id: s.id, content: s.template, type: "suspicious" }));
+    targetForTexts.digital.texts.push(...incrimTexts);
 
-    citizen.police_records = pickSome(police, 1).map(s => ({
-        id: s.id,
-        note: s.template
-    }));
+    // Add Incriminating Emails (Always on suspect for now)
+    const incrimEmails = pickSome(emails, 2).map(s => ({ id: s.id, subject: s.subject, content: s.template, type: "suspicious" }));
+    citizen.digital.emails.push(...incrimEmails);
 
+    // Add Police Records
+    citizen.police_records = pickSome(police, 1).map(s => ({ id: s.id, note: s.template }));
+
+    // Add boring stuff so not every text is a crime confession
+    const fillNoise = (person) => {
+        const nTexts = pickSome(noiseTexts, randInt(1, 3)).map(s => ({ id: s.id, content: s.template, type: "normal" }));
+        const nEmails = pickSome(noiseEmails, randInt(1, 2)).map(s => ({ id: s.id, subject: s.subject, content: s.template, type: "normal" }));
+        person.digital.texts.push(...nTexts);
+        person.digital.emails.push(...nEmails);
+
+        // Shuffle arrays so suspicious stuff isn't always at top/bottom
+        person.digital.texts.sort(() => Math.random() - 0.5);
+        person.digital.emails.sort(() => Math.random() - 0.5);
+    };
+
+    fillNoise(citizen);
+    if(targetForTexts !== citizen) fillNoise(targetForTexts);
+
+    // Apps logic
     const apps = [];
-    if (tags.includes("money")) {
-        apps.push({ name: "ShadowPay", note: "Peer-to-peer payments." });
-    }
-    if (tags.includes("location_history")) {
-        apps.push({ name: "TrackLog", note: "Location logging utility." });
-    }
-    if (tags.includes("noise")) {
-        apps.push({ name: "PartyChat", note: "Group chat for parties." });
-    }
-
+    if (tags.includes("money")) apps.push({ name: "ShadowPay", note: "Peer-to-peer payments." });
+    if (tags.includes("location_history")) apps.push({ name: "TrackLog", note: "Location logging utility." });
+    if (tags.includes("noise")) apps.push({ name: "PartyChat", note: "Group chat for parties." });
     citizen.digital.apps = apps;
 }
 
@@ -295,28 +312,39 @@ export function getOfficerById(policeId) {
 // top-level world generator
 
 export function generateTonightWorld(day) {
-    const citizenCount = 8;
+    const citizenCount = 12; // Increased from 8
     const citizens = [];
+    for (let i = 0; i < citizenCount; i++) { citizens.push(generateCitizen("citizen_" + i)); }
 
-    for (let i = 0; i < citizenCount; i++) {
-        citizens.push(generateCitizen("citizen_" + i));
+    // Randomly link some citizens
+    for (let i = 0; i < citizens.length; i++) {
+        if (citizens[i].relationships.length > 0) continue;
+
+        // 40% chance to have a partner/associate
+        if (Math.random() < 0.4) {
+            // Find another single person
+            const partner = citizens.find((c, idx) => idx !== i && c.relationships.length === 0);
+            if (partner) {
+                const type = randChoice(["Spouse", "Sibling", "Roommate", "Associate"]);
+                createRelationship(citizens[i], partner, type);
+            }
+        }
     }
 
     const complaintTemplate = randChoice(COMPLAINT_TEMPLATES);
-
     const targetIndex = randInt(0, citizens.length - 1);
     const targetCitizen = citizens[targetIndex];
     targetCitizen.isLinkedToCase = true;
     targetCitizen.case_relevance = "main";
 
-    attachEvidenceToCitizen(targetCitizen, complaintTemplate);
+    // Pass full citizens list so we can find partners
+    attachEvidenceToCitizen(targetCitizen, complaintTemplate, citizens);
 
     const report = buildReportFromCitizen(targetCitizen, complaintTemplate);
 
     state.world.citizens = citizens;
     state.world.selectedCitizenId = null;
     state.world.selectedImei = null;
-
     state.world.policeOfficers = generatePoliceRoster(day);
     state.security.activePoliceCode = null;
 
@@ -330,13 +358,14 @@ export function generateTonightWorld(day) {
             threat_level: complaintTemplate.default_threat
         },
         report,
+        evidence: [],
         verdict: {
-            action: null,          // "flag" | "monitor" | "ignore"
-            threat: null,          // "low" | "medium" | "high"
+            action: null,
+            threat: null,
             evaluated: false,
             score: 0,
             summary: "",
-            reason: null           // "submit" | "timeout"
+            reason: null
         }
     };
 

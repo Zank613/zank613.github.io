@@ -13,7 +13,6 @@ export class CitizenDbApp extends BaseApp {
     handleClick(globalX, globalY, contentRect) {
         const { x, y } = this.getLocalCoords(globalX, globalY, contentRect);
 
-        // SEARCH button
         if (this.isInside(x, y, 16, 130, 120, 28)) {
             this.runSearch();
             return;
@@ -141,8 +140,21 @@ export class CitizenDbApp extends BaseApp {
         if (selectedId) {
             const c = state.world.citizens.find(c => c.id === selectedId);
             if (c) {
+                let infoY = 170;
                 ctx.fillStyle = "#aaccff";
-                ctx.fillText(`Selected: ${c.name} ${c.surname} (${c.id})`, 16, 188);
+                ctx.fillText(`Selected: ${c.name} ${c.surname} (${c.id})`, 16, infoY);
+
+                if (c.relationships && c.relationships.length > 0) {
+                    infoY += 16;
+                    ctx.fillStyle = "#ffcc66";
+                    ctx.fillText("Known Associates:", 16, infoY);
+                    infoY += 16;
+                    c.relationships.forEach(rel => {
+                        ctx.fillStyle = "#dddddd";
+                        ctx.fillText(`- ${rel.type}: ${rel.name} (ID: ${rel.targetId})`, 24, infoY);
+                        infoY += 16;
+                    });
+                }
             }
         }
 

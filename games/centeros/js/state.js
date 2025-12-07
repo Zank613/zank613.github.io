@@ -77,6 +77,8 @@ export const state = {
         sites: {}
     },
 
+    acceptedJobs: [],
+
     // simple case scoring stats
     caseStats: {
         totalDecided: 0,

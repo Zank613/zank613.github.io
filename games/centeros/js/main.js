@@ -10,6 +10,7 @@ import { networkManager } from "./os/networkManager.js";
 import { TraceManager } from "./systems/traceManager.js";
 import { AtmosphereManager } from "./systems/atmosphereManager.js";
 import { themeManager } from "./os/theme.js";
+import { generateSiteWorld } from "./world/siteGenerator.js";
 
 // Game State
 import { state, TIME_CONFIG } from "./state.js";
@@ -430,6 +431,27 @@ function advanceTimeAndEconomy(dt) {
         state.gameOver = true;
     }
 }
+
+// World Initialization
+
+// Initial site generation and event listener setup
+function setupSiteGeneration() {
+    // Generate initial site content
+    generateSiteWorld(state.time.day, state.world.citizens, state.world.case);
+
+    // Re-generate content on every new day or when specifically requested
+    window.addEventListener("centeros-new-day", () => {
+        generateSiteWorld(state.time.day, state.world.citizens, state.world.case);
+        console.log("Site content regenerated for new day.");
+    });
+
+    // Listen for the refresh event
+    window.addEventListener("centeros-refresh-sites", () => {
+        generateSiteWorld(state.time.day, state.world.citizens, state.world.case);
+    });
+}
+
+setupSiteGeneration();
 
 function update(dt) {
     if (!state.gameOver) {

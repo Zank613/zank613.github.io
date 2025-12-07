@@ -1,20 +1,16 @@
-// will be eventually moved from hardcode to JSON
-
 // ==========================================
 // CIVILIAN IDENTITY POOLS
 // ==========================================
 
 export const NAME_POOL = [
-    // Male
     "Mark", "Connor", "Jamal", "Luis", "Noah", "Callum", "Joseph", "Samuel",
     "Dmitri", "Viktor", "Takeshi", "Alejandro", "Marcus", "Elias", "Finn",
     "Arthur", "Ben", "Kieran", "Omar", "Zayn", "Hiro", "Felix", "Jasper",
     "Leon", "Diego", "Thiago", "Axel", "Roman", "Ivan", "Lukas",
-    // Female
     "Evelyn", "Anya", "Léa", "Sara", "Hannah", "Fatima", "Maria", "Sophie",
     "Chloe", "Mei", "Elena", "Isabella", "Zoe", "Nora", "Alice", "Luna",
     "Mila", "Freya", "Elara", "Yasmin", "Priya", "Keira", "Jade", "Ruby",
-    "Ivy", "Aurora", "Clara", "Eva", "Sasha", "Nadia"
+    "Ivy", "Aurora", "Clara", "Eva", "Sasha", "Nadia", "Sarah", "Jane", "Emily"
 ];
 
 export const SURNAME_POOL = [
@@ -23,7 +19,8 @@ export const SURNAME_POOL = [
     "Ali", "Tanaka", "Chen", "Kim", "Santos", "Silva", "Rossi", "Moreau",
     "Andersson", "Nielsen", "Kowalski", "Papadopoulos", "Ivanov", "Popov",
     "Sato", "Suzuki", "Wang", "Li", "Garcia", "Rodriguez", "Hernandez",
-    "Smith", "Johnson", "Williams", "Brown", "Jones", "Miller", "Davis"
+    "Smith", "Johnson", "Williams", "Brown", "Jones", "Miller", "Davis",
+    "Wilson", "Taylor", "Anderson", "Thomas", "Moore", "Martin", "Jackson"
 ];
 
 export const EYE_COLOR_POOL = [
@@ -35,13 +32,6 @@ export const HAIR_COLOR_POOL = [
     "jet black", "dark brown", "chestnut", "dirty blonde", "platinum blonde",
     "auburn", "ginger", "grey", "white", "dyed blue", "dyed pink", "dyed green",
     "shaved", "balding", "dreadlocks"
-];
-
-// Maybe use in the future?
-export const OCCUPATION_POOL = [
-    "Retail Worker", "Software Dev", "Unemployed", "Student", "Construction",
-    "Nurse", "Bartender", "Security Guard", "Freelancer", "Accountant",
-    "Driver", "Chef", "Artist", "Mechanic", "Teacher"
 ];
 
 // ==========================================
@@ -77,6 +67,15 @@ export const COMPLAINT_TEMPLATES = [
         default_is_criminal: true,
         default_threat: "low"
     },
+    {
+        id: "corp_leak",
+        category: "financial",
+        title: "Corporate Data Leak",
+        base_text: "Anonymous tip suggests subject is selling proprietary schematics to overseas competitors.",
+        evidence_tags: ["tech", "money", "work"],
+        default_is_criminal: true,
+        default_threat: "high"
+    },
 
     // --- NUISANCE / PUBLIC ORDER ---
     {
@@ -103,6 +102,15 @@ export const COMPLAINT_TEMPLATES = [
         title: "Vandalism (Graffiti)",
         base_text: "Subject spotted spraying tags on private storefronts and subway station walls.",
         evidence_tags: ["paint", "night_activity", "vandalism"],
+        default_is_criminal: true,
+        default_threat: "low"
+    },
+    {
+        id: "illegal_dumping",
+        category: "nuisance",
+        title: "Illegal Dumping",
+        base_text: "Vehicle registered to subject seen dumping construction waste in a nature reserve.",
+        evidence_tags: ["travel", "work"],
         default_is_criminal: true,
         default_threat: "low"
     },
@@ -134,6 +142,15 @@ export const COMPLAINT_TEMPLATES = [
         evidence_tags: ["violence", "alcohol", "injury"],
         default_is_criminal: true,
         default_threat: "medium"
+    },
+    {
+        id: "hit_and_run",
+        category: "personal_safety",
+        title: "Hit and Run",
+        base_text: "Vehicle matching subject's description struck a pedestrian and fled the scene. Front bumper damage likely.",
+        evidence_tags: ["travel", "panic", "car"],
+        default_is_criminal: true,
+        default_threat: "high"
     },
 
     // --- NARCOTICS ---
@@ -203,19 +220,29 @@ export const EVIDENCE_SNIPPETS = {
         { id: "tx_drug_002", tags: ["drugs"], template: "Can I get a 20? Usual spot." },
         { id: "tx_drug_003", tags: ["drugs", "phones"], template: "Burn this sim card after you read this. New number tomorrow." },
 
-        // VIOLENCE
+        // VIOLENCE / PANIC
         { id: "tx_violence_001", tags: ["violence", "anger"], template: "If he shows his face here again, I'm putting him in the hospital." },
         { id: "tx_violence_002", tags: ["violence", "injury"], template: "My hand is messed up. Think I broke a knuckle on his jaw." },
+        { id: "tx_panic_001", tags: ["panic", "car"], template: "I didn't stop. I couldn't stop. I think I hit something bad." },
+        { id: "tx_panic_002", tags: ["panic", "travel"], template: "Pack a bag. We need to leave the city tonight." },
 
         // TECH / HACKING
         { id: "tx_tech_001", tags: ["hacking", "tech"], template: "Handshake captured. Cracking the hash now." },
-        { id: "tx_tech_002", tags: ["tech", "privacy"], template: "The drone battery is dying, bring it back to the van." }
+        { id: "tx_tech_002", tags: ["tech", "privacy"], template: "The drone battery is dying, bring it back to the van." },
+
+        // NOISE (BENIGN)
+        { id: "tx_norm_001", tags: ["noise"], template: "Hey, are we still on for dinner at 7?" },
+        { id: "tx_norm_002", tags: ["noise"], template: "Can you pick up milk on the way home?" },
+        { id: "tx_norm_003", tags: ["noise"], template: "Lol did you see that video?" },
+        { id: "tx_norm_004", tags: ["noise"], template: "Happy birthday! Hope you have a great one." },
+        { id: "tx_norm_005", tags: ["noise"], template: "The meeting dragged on forever. Leaving now." }
     ],
 
     emails: [
         // TECH / SCAMS
         { id: "em_tech_001", tags: ["tech", "money"], subject: "NFC reader arrival", template: "The NFC device arrived today, be careful with where you install it." },
         { id: "em_scam_001", tags: ["deception", "money"], subject: "Script update", template: "Here is the new script for the charity drive. Focus on the guilt angle." },
+        { id: "em_corp_001", tags: ["work", "tech"], subject: "Files attached", template: "Here are the blueprints. Do not open this on the company network. Wire the payment." },
 
         // STALKING
         { id: "em_obsession_001", tags: ["location_history"], subject: "Location data export", template: "Attached is the location timeline you requested for the last three weeks." },
@@ -225,7 +252,12 @@ export const EVIDENCE_SNIPPETS = {
 
         // CORPORATE / WORK
         { id: "em_work_001", tags: ["money"], subject: "Overdue Invoice", template: "Final warning regarding the outstanding debt. Legal action will follow." },
-        { id: "em_violence_001", tags: ["violence", "anger"], subject: "Stay away", template: "I am filing a restraining order. Stop contacting my family." }
+        { id: "em_violence_001", tags: ["violence", "anger"], subject: "Stay away", template: "I am filing a restraining order. Stop contacting my family." },
+
+        // NOISE (BENIGN)
+        { id: "em_norm_001", tags: ["noise"], subject: "Utility Bill", template: "Your electricity bill for October is available to view." },
+        { id: "em_norm_002", tags: ["noise"], subject: "Subscription", template: "Thank you for subscribing to CatFacts Daily." },
+        { id: "em_norm_003", tags: ["noise"], subject: "Weekend Plans", template: "Are we still going hiking on Saturday?" }
     ],
 
     police_records: [
@@ -245,6 +277,7 @@ export const EVIDENCE_SNIPPETS = {
         { id: "pol_drug_001", tags: ["drugs"], template: "Vehicle searched during traffic stop. Paraphernalia found, but no substances. Released." },
 
         // TRAFFIC
-        { id: "pol_traffic_001", tags: ["alcohol"], template: "DUI checkpoint refusal. License suspended pending investigation." }
+        { id: "pol_traffic_001", tags: ["alcohol"], template: "DUI checkpoint refusal. License suspended pending investigation." },
+        { id: "pol_car_001", tags: ["car", "travel"], template: "Speeding violation (25km/h over). Ticket issued." }
     ]
 };
