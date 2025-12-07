@@ -1,48 +1,33 @@
 import { state } from "../state.js";
 import { requirePoliceCode } from "../world/security.js";
+import { BaseApp } from "../core/baseApp.js";
 
-export class CitizenDbApp {
+export class CitizenDbApp extends BaseApp {
     constructor() {
+        super();
         this.lastResults = [];
         this.message = "Press SEARCH to query tonight's citizens using the case report.";
-
-        // for click detection
-        this.resultRowRects = []; // [{id, x,y,w,h}]
+        this.resultRowRects = [];
     }
 
-    handleClick(localX, localY, contentRect) {
-        const x = localX - contentRect.x;
-        const y = localY - contentRect.y;
+    handleClick(globalX, globalY, contentRect) {
+        const { x, y } = this.getLocalCoords(globalX, globalY, contentRect);
 
         // SEARCH button
-        const btnX = 16;
-        const btnY = 130;
-        const btnW = 120;
-        const btnH = 28;
-
-        if (x >= btnX && x <= btnX + btnW &&
-            y >= btnY && y <= btnY + btnH) {
+        if (this.isInside(x, y, 16, 130, 120, 28)) {
             this.runSearch();
             return;
         }
 
         // Check result rows
         for (const row of this.resultRowRects) {
-            if (x >= row.x && x <= row.x + row.w &&
-                y >= row.y && y <= row.y + row.h) {
-
+            if (this.isInside(x, y, row.x, row.y, row.w, row.h)) {
                 state.world.selectedCitizenId = row.citizenId;
                 this.message = `Selected ${row.label} as current subject.`;
                 return;
             }
         }
     }
-
-    handleKey(e) {
-
-    }
-
-    update(dt) {}
 
     runSearch() {
         const worldCase = state.world.case;
@@ -59,66 +44,35 @@ export class CitizenDbApp {
         const matches = citizens.filter(c => {
             const p = c.physical;
 
-            // Height filter
             if (f.height && f.height.kind !== "missing") {
-                const min = f.height.value_cm_min;
-                const max = f.height.value_cm_max;
-                if (typeof min === "number" && typeof max === "number") {
-                    if (p.height_cm < min || p.height_cm > max) return false;
-                }
+                if (p.height_cm < f.height.value_cm_min || p.height_cm > f.height.value_cm_max) return false;
             }
-
-            // Weight filter
             if (f.weight && f.weight.kind !== "missing") {
-                const minW = f.weight.value_kg_min;
-                const maxW = f.weight.value_kg_max;
-                if (typeof minW === "number" && typeof maxW === "number") {
-                    if (p.weight_kg < minW || p.weight_kg > maxW) return false;
-                }
+                if (p.weight_kg < f.weight.value_kg_min || p.weight_kg > f.weight.value_kg_max) return false;
             }
-
-            // Age filter
             if (f.age && f.age.kind !== "missing") {
-                const minA = f.age.value_years_min;
-                const maxA = f.age.value_years_max;
-                if (typeof minA === "number" && typeof maxA === "number") {
-                    if (p.age < minA || p.age > maxA) return false;
-                }
+                if (p.age < f.age.value_years_min || p.age > f.age.value_years_max) return false;
             }
-
-            // Eye colour
             if (f.eye_color && f.eye_color.kind !== "missing" && f.eye_color.value) {
-                if (p.eye_color.toLowerCase() !== f.eye_color.value.toLowerCase()) {
-                    return false;
-                }
+                if (p.eye_color.toLowerCase() !== f.eye_color.value.toLowerCase()) return false;
             }
-
-            // Hair colour
             if (f.hair_color && f.hair_color.kind !== "missing" && f.hair_color.value) {
-                if (p.hair_color.toLowerCase() !== f.hair_color.value.toLowerCase()) {
-                    return false;
-                }
+                if (p.hair_color.toLowerCase() !== f.hair_color.value.toLowerCase()) return false;
             }
-
             return true;
         });
 
         this.lastResults = matches;
-        if (matches.length === 0) {
-            this.message = "No citizens match the current description.";
-        } else if (matches.length === 1) {
-            this.message = "Single strong match found. Click them to select.";
-        } else {
-            this.message = `${matches.length} possible matches. Click one to select.`;
-        }
+        this.message = matches.length === 0 ? "No citizens match." :
+            matches.length === 1 ? "Single match found." :
+                `${matches.length} possible matches.`;
     }
 
     render(ctx, rect) {
+        this.clear(ctx, rect, "#151821");
+
         ctx.save();
         ctx.translate(rect.x, rect.y);
-
-        ctx.fillStyle = "#151821";
-        ctx.fillRect(0, 0, rect.width, rect.height);
 
         const access = requirePoliceCode("Citizen_DB");
         if (!access.allowed) {
@@ -134,7 +88,6 @@ export class CitizenDbApp {
         ctx.font = "14px system-ui";
         ctx.textBaseline = "top";
         ctx.textAlign = "left";
-
         ctx.fillStyle = "#ffcc66";
         ctx.fillText("Citizen_DB", 16, 12);
 
@@ -145,20 +98,19 @@ export class CitizenDbApp {
         ctx.fillStyle = "#bbbbbb";
 
         if (!worldCase) {
-            ctx.fillText("No active case. There is nothing to query yet.", 16, 40);
+            ctx.fillText("No active case.", 16, 40);
             ctx.restore();
             return;
         }
 
         const f = report.fields;
-
         let y = 40;
         ctx.fillStyle = "#ffcc66";
-        ctx.fillText("Current filters (from report):", 16, y);
+        ctx.fillText("Current filters:", 16, y);
         y += 18;
 
         const drawRow = (label, field) => {
-            const text = (field && field.text) || "Unknown / not in report";
+            const text = (field && field.text) || "Unknown";
             ctx.fillStyle = "#bbbbbb";
             ctx.fillText(label + ": ", 16, y);
             ctx.fillStyle = "#ffffff";
@@ -172,91 +124,51 @@ export class CitizenDbApp {
         drawRow("Hair Colour", f.hair_color);
         drawRow("Age", f.age);
 
-        // search button
-        const btnX = 16;
-        const btnY = 130;
-        const btnW = 120;
-        const btnH = 28;
-
+        // Search Button
         ctx.fillStyle = "#2d7a3e";
-        ctx.fillRect(btnX, btnY, btnW, btnH);
+        ctx.fillRect(16, 130, 120, 28);
         ctx.fillStyle = "#ffffff";
         ctx.textAlign = "center";
-        ctx.fillText("SEARCH", btnX + btnW / 2, btnY + 8);
+        ctx.fillText("SEARCH", 16 + 60, 130 + 8);
 
-        // message
+        // Message
         ctx.textAlign = "left";
         ctx.fillStyle = "#ffcc99";
         ctx.fillText(this.message, 16, 170);
 
-        // selected citizen info
+        // Selected Info
         const selectedId = state.world.selectedCitizenId;
         if (selectedId) {
             const c = state.world.citizens.find(c => c.id === selectedId);
             if (c) {
                 ctx.fillStyle = "#aaccff";
-                ctx.fillText(
-                    `Selected: ${c.name} ${c.surname} (id: ${c.id})`,
-                    16,
-                    188
-                );
+                ctx.fillText(`Selected: ${c.name} ${c.surname} (${c.id})`, 16, 188);
             }
         }
 
-        // results list
+        // Results
         y = 214;
-        const results = this.lastResults;
-        this.resultRowRects = [];
-
         ctx.fillStyle = "#ccccff";
         ctx.fillText("Results:", 16, y);
         y += 16;
 
-        if (!results || results.length === 0) {
-            ctx.fillStyle = "#8888aa";
-            ctx.fillText("(no matches)", 16, y);
-            ctx.restore();
-            return;
-        }
-
-        for (const c of results) {
+        this.resultRowRects = [];
+        for (const c of this.lastResults) {
             if (y > rect.height - 40) break;
-
             const isSelected = c.id === selectedId;
-
-            const rowX = 16;
-            const rowY = y - 2;
-            const rowW = rect.width - 32;
             const rowH = 32;
 
-            if (isSelected) {
-                ctx.fillStyle = "rgba(100, 150, 255, 0.2)";
-                ctx.fillRect(rowX, rowY, rowW, rowH);
-            } else {
-                ctx.fillStyle = "rgba(255, 255, 255, 0.03)";
-                ctx.fillRect(rowX, rowY, rowW, rowH);
-            }
+            ctx.fillStyle = isSelected ? "rgba(100, 150, 255, 0.2)" : "rgba(255, 255, 255, 0.03)";
+            ctx.fillRect(16, y - 2, rect.width - 32, rowH);
 
             ctx.fillStyle = "#ffffff";
-            ctx.fillText(`${c.name} ${c.surname}  (id: ${c.id})`, 24, y);
+            ctx.fillText(`${c.name} ${c.surname}  (${c.id})`, 24, y);
             y += 14;
-
             ctx.fillStyle = "#aaaaaa";
-            ctx.fillText(
-                `H:${c.physical.height_cm}cm  W:${c.physical.weight_kg}kg  Age:${c.physical.age}`,
-                24,
-                y
-            );
+            ctx.fillText(`H:${c.physical.height_cm}cm  W:${c.physical.weight_kg}kg  Age:${c.physical.age}`, 24, y);
             y += 18;
 
-            this.resultRowRects.push({
-                citizenId: c.id,
-                label: `${c.name} ${c.surname}`,
-                x: rowX,
-                y: rowY,
-                w: rowW,
-                h: rowH
-            });
+            this.resultRowRects.push({ citizenId: c.id, label: `${c.name} ${c.surname}`, x: 16, y: y - 32 - 2, w: rect.width - 32, h: rowH });
         }
 
         ctx.restore();

@@ -1,6 +1,8 @@
-export class NotepadApp {
+import { BaseApp } from "../core/baseApp.js";
+
+export class NotepadApp extends BaseApp {
     constructor(fileData) {
-        // If fileData is passed (string or object), load it. Otherwise empty.
+        super();
         if (typeof fileData === "string") {
             this.text = fileData;
         } else if (fileData && fileData.content) {
@@ -23,18 +25,17 @@ export class NotepadApp {
         }
     }
 
-    update(dt) {}
-
     render(ctx, rect) {
-        ctx.fillStyle = "#101317";
-        ctx.fillRect(rect.x, rect.y, rect.width, rect.height);
+        const colors = this.getColors();
+        const fonts = this.getFonts();
 
-        ctx.font = "13px monospace";
-        ctx.fillStyle = "#f0f0f0";
+        this.clear(ctx, rect, colors.contentBg);
+
+        ctx.font = fonts.mono;
+        ctx.fillStyle = colors.contentText;
         ctx.textBaseline = "top";
         ctx.textAlign = "left";
 
-        // Simple text wrapping or just line splitting
         const lines = this.text.split("\n");
         const lineHeight = 18;
         for (let i = 0; i < lines.length; i++) {

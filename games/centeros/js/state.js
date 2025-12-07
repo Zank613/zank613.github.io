@@ -93,6 +93,7 @@ export const state = {
     // Apps that are available to launch in the OS
     installedApps: [
         // core / default apps that should always exist
+        "settings",
         "cases",          // Case Manager
         "citizen",        // Citizen_DB
         "id",             // ID_DB

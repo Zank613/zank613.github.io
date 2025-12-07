@@ -1,32 +1,249 @@
 import { createCanvasContext } from "./core/canvas.js";
 import { EventBus } from "./core/events.js";
 import { startLoop } from "./core/loop.js";
+
+// OS / Engine Imports
 import { Desktop } from "./os/desktop.js";
 import { WindowManager } from "./os/windowManager.js";
-import { getAppDefinition } from "./os/appRegistry.js";
+import { appRegistry } from "./os/appRegistry.js";
 import { networkManager } from "./os/networkManager.js";
-import { state, TIME_CONFIG } from "./state.js";
-import { generateTonightWorld, evaluateCaseVerdict } from "./world/caseWorld.js";
-import { getOfficerById } from "./world/caseWorld.js";
-
 import { TraceManager } from "./systems/traceManager.js";
 import { AtmosphereManager } from "./systems/atmosphereManager.js";
+import { themeManager } from "./os/theme.js";
+
+// Game State
+import { state, TIME_CONFIG } from "./state.js";
+import { generateTonightWorld, evaluateCaseVerdict, getOfficerById } from "./world/caseWorld.js";
+
+// === APP IMPORTS ===
+import { NetHackerApp } from "./apps/netHackerApp.js";
+import { NotepadApp } from "./apps/notepadApp.js";
+import { UnderworldApp } from "./apps/underworldApp.js";
+import { EightminerApp } from "./apps/eightminerApp.js";
+import { RemoteAccesserApp } from "./apps/remoteAccesserApp.js";
+import { CaseManagerApp } from "./apps/caseManagerApp.js";
+import { CitizenDbApp } from "./apps/citizenDbApp.js";
+import { IdDbApp } from "./apps/idDbApp.js";
+import { PoliceDbApp } from "./apps/policeDbApp.js";
+import { SimDbApp } from "./apps/simDbApp.js";
+import { TelScannerApp } from "./apps/telScannerApp.js";
+import { AuthLinkApp } from "./apps/authLinkApp.js";
+import { DutyBoardApp } from "./apps/dutyBoardApp.js";
+import { StressReliefApp } from "./apps/stressReliefApp.js";
+import { BrowserApp } from "./apps/browserApp.js";
+import { VirusExterminatorApp } from "./apps/virusExterminatorApp.js";
+import { SettingsApp } from "./apps/settingsApp.js";
+import { NetToolsApp } from "./apps/netToolsApp.js";
+
+// ==============================================
+// 1. REGISTER APPS
+// ==============================================
+
+appRegistry.register("settings", {
+    title: "Settings",
+    preferredSize: { width: 500, height: 350 },
+    createInstance: () => new SettingsApp()
+});
+appRegistry.register("cases", {
+    title: "Case Manager",
+    preferredSize: { width: 720, height: 460 },
+    createInstance: (data) => new CaseManagerApp(data)
+});
+appRegistry.register("citizen", {
+    title: "Citizen_DB",
+    preferredSize: { width: 680, height: 420 },
+    createInstance: (data) => new CitizenDbApp(data)
+});
+appRegistry.register("id", {
+    title: "ID_DB",
+    preferredSize: { width: 520, height: 360 },
+    createInstance: (data) => new IdDbApp(data)
+});
+appRegistry.register("police", {
+    title: "Police_DB",
+    preferredSize: { width: 680, height: 380 },
+    createInstance: (data) => new PoliceDbApp(data)
+});
+appRegistry.register("sim", {
+    title: "Sim_DB",
+    preferredSize: { width: 520, height: 360 },
+    createInstance: (data) => new SimDbApp(data)
+});
+appRegistry.register("tel", {
+    title: "TelScanner",
+    preferredSize: { width: 700, height: 440 },
+    createInstance: (data) => new TelScannerApp(data)
+});
+appRegistry.register("nethacker", {
+    title: "NetHacker",
+    preferredSize: { width: 640, height: 380 },
+    createInstance: (data) => new NetHackerApp(data)
+});
+appRegistry.register("notepad", {
+    title: "Notepad",
+    preferredSize: { width: 480, height: 320 },
+    createInstance: (data) => new NotepadApp(data)
+});
+appRegistry.register("miner", {
+    title: "Eightminer",
+    preferredSize: { width: 520, height: 340 },
+    createInstance: (data) => new EightminerApp(data)
+});
+appRegistry.register("remote", {
+    title: "RemoteAccesser",
+    preferredSize: { width: 520, height: 340 },
+    createInstance: (data) => new RemoteAccesserApp(data)
+});
+appRegistry.register("shop", {
+    title: "Underworld Market",
+    preferredSize: { width: 620, height: 680 },
+    createInstance: (data) => new UnderworldApp(data)
+});
+appRegistry.register("net", {
+    title: "Network Tools",
+    preferredSize: { width: 540, height: 320 },
+    createInstance: () => new NetToolsApp()
+});
+appRegistry.register("duty", {
+    title: "Duty Board",
+    preferredSize: { width: 400, height: 500 },
+    createInstance: (data) => new DutyBoardApp(data)
+});
+appRegistry.register("authlink", {
+    title: "AuthLink Protocol",
+    preferredSize: { width: 800, height: 600 },
+    createInstance: () => new AuthLinkApp(window.pendingAuthPoliceId)
+});
+appRegistry.register("stressReducer", {
+    title: "StressReducer",
+    preferredSize: { width: 300, height: 250},
+    createInstance: () => new StressReliefApp()
+});
+appRegistry.register("browser", {
+    title: "Browser",
+    preferredSize: {width: 800, height: 600},
+    createInstance: () => new BrowserApp()
+});
+appRegistry.register("virusex", {
+    title: "VirusExterminator",
+    preferredSize: {width: 300, height: 250},
+    createInstance: () => new VirusExterminatorApp()
+});
+
+// ==============================================
+// 2. ENGINE INITIALIZATION
+// ==============================================
 
 const bus = new EventBus();
 const { canvas, ctx } = createCanvasContext("centerCanvas");
 
 const atmosphereManager = new AtmosphereManager();
-const desktop = new Desktop(networkManager, atmosphereManager);
 const wm = new WindowManager();
+const desktop = new Desktop(networkManager, atmosphereManager);
 const traceManager = new TraceManager();
+
+desktop.setWindowManager(wm);
+desktop.setTaskbarPosition("bottom");
+
+window.addEventListener("centeros-settings-change", (e) => {
+    const { type, value } = e.detail;
+    if (type === "theme") {
+        themeManager.setTheme(value);
+    } else if (type === "font") {
+        themeManager.setFont(value);
+    } else if (type === "taskbar") {
+        desktop.setTaskbarPosition(value);
+    }
+});
+
+// ==============================================
+// 3. GAME CONFIGURATION (Icons & UI)
+// ==============================================
+
+desktop.registerIcon({ id: "cases",     label: "Cases",           color: "#37a0ff" });
+desktop.registerIcon({ id: "citizen",   label: "Citizen_DB",      color: "#66d9ef" });
+desktop.registerIcon({ id: "id",        label: "ID_DB",           color: "#ffb347" });
+desktop.registerIcon({ id: "police",    label: "Police_DB",       color: "#ff6666" });
+desktop.registerIcon({ id: "sim",       label: "Sim_DB",          color: "#88ff88" });
+desktop.registerIcon({ id: "tel",       label: "TelScan",         color: "#ccaaff" });
+desktop.registerIcon({ id: "nethacker", label: "NetHacker",       color: "#ffcc00" });
+desktop.registerIcon({ id: "notepad",   label: "Notes",           color: "#8888ff" });
+desktop.registerIcon({ id: "miner",     label: "Miner",           color: "#ff8800" });
+desktop.registerIcon({ id: "remote",    label: "Remote",          color: "#66ff99" });
+desktop.registerIcon({ id: "shop",      label: "Shop",            color: "#ff7043" });
+desktop.registerIcon({ id: "net",       label: "Net",             color: "#4caf50" });
+desktop.registerIcon({ id: "duty",          label: "DutyBoard",       color: "#999999" });
+desktop.registerIcon({ id: "stressReducer", label: "StressReducer",   color: "#dc2acf" });
+desktop.registerIcon({ id: "browser",       label: "Browser",         color: "#9e9393" });
+desktop.registerIcon({ id: "virusex",       label: "VirusExterminator", color: "#ea0000" });
+desktop.registerIcon({ id: "settings", label: "Settings", color: "#888888" });
+
+desktop.setCustomPanelRenderer((ctx, w, h, ph) => {
+    const fonts = themeManager.getFonts();
+    const barY = (desktop.taskbarPosition === 'bottom') ? h - ph : 0;
+    const isHorizontal = (desktop.taskbarPosition === 'bottom' || desktop.taskbarPosition === 'top');
+
+    if (!isHorizontal) return;
+
+    const centerY = barY + ph / 2;
+
+    ctx.font = fonts.panel;
+    ctx.textBaseline = "middle";
+
+    const clockX = w - 20;
+    const stressX = w - 110;
+    const heatX = w - 220;
+    const coinX = w - 320;
+
+    ctx.shadowColor = "rgba(0,0,0,0.8)";
+    ctx.shadowBlur = 2;
+
+    // Clock
+    const baseMinutes = 21 * 60;
+    const total = baseMinutes + state.time.minutes;
+    const dayMinutes = total % (24 * 60);
+    const hour = Math.floor(dayMinutes / 60);
+    const minute = Math.floor(dayMinutes % 60);
+    const timeStr = String(hour).padStart(2, "0") + ":" + String(minute).padStart(2, "0");
+
+    ctx.textAlign = "right";
+    ctx.fillStyle = "#ffffff";
+    ctx.fillText(`D${state.time.day} ${timeStr}`, clockX, centerY);
+
+    // Stress
+    const stress = Math.round(Math.max(0, Math.min(100, state.stress)));
+    ctx.fillStyle = stress > 50 ? "#ff5555" : "#aaaaaa";
+    if (stress > 80 && Math.floor(Date.now() / 500) % 2 === 0) ctx.fillStyle = "#ffffff";
+    ctx.fillText(`Stress: ${stress}%`, stressX, centerY);
+
+    // Heat
+    const heat = Math.round(Math.max(0, Math.min(100, state.policeHeat)));
+    ctx.fillStyle = heat > 50 ? "#ff9966" : "#55aaff";
+    ctx.fillText(`Heat: ${heat}%`, heatX, centerY);
+
+    // Coins
+    const coins = state.eightcoin.toFixed(1);
+    ctx.fillStyle = "#ffcc66";
+    ctx.fillText(`E€E: ${coins}`, coinX, centerY);
+
+    ctx.shadowBlur = 0;
+});
+
+// ==============================================
+// 4. LOGIC & EVENTS
+// ==============================================
 
 if (typeof state.stress === 'undefined') state.stress = 0;
 
 const TIME_SPEED = TIME_CONFIG.NIGHT_MINUTES / TIME_CONFIG.NIGHT_DURATION_SECONDS;
-
 const MINER_RATE_PER_MINUTE = 0.08;
 const MINER_HEAT_PER_MINUTE = 0.4;
 const REMOTE_HEAT_PER_HOUR = 4;
+
+window.addEventListener("centeros-open-auth", (e) => {
+    window.pendingAuthPoliceId = e.detail.policeId;
+    bus.emit("openApp", "authlink");
+});
 
 window.addEventListener("force-open-app", (e) => {
     bus.emit("openApp", e.detail);
@@ -54,6 +271,7 @@ const policeNets = officers.map(o => ({
 }));
 networkManager.injectNetworks(policeNets);
 
+// Event: Open App
 bus.on("openApp", (payload) => {
     let appId, appData;
     if (typeof payload === "string") {
@@ -64,7 +282,7 @@ bus.on("openApp", (payload) => {
         appData = payload.data;
     }
 
-    const def = getAppDefinition(appId);
+    const def = appRegistry.get(appId);
     if (!def) return;
 
     const instance = def.createInstance(appData);
@@ -81,70 +299,42 @@ bus.on("openApp", (payload) => {
     );
 });
 
+// Stress Glitch Effect
 function applyStressGlitch(x, y) {
     if (state.stress < 40) return { x, y, ignored: false };
-
     if (state.stress > 80 && Math.random() < 0.2) {
         return { x, y, ignored: true };
     }
-
     const intensity = (state.stress - 40) * 0.5;
     const offsetX = (Math.random() - 0.5) * intensity;
     const offsetY = (Math.random() - 0.5) * intensity;
-
     return { x: x + offsetX, y: y + offsetY, ignored: false };
 }
 
-
-let isPointerDown = false;
-
 canvas.addEventListener("mousedown", (e) => {
     const rect = canvas.getBoundingClientRect();
-    const rawX = e.clientX - rect.left;
-    const rawY = e.clientY - rect.top;
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
 
-    const input = applyStressGlitch(rawX, rawY);
-    if (input.ignored) return;
+    // 1. Trace Check
+    if (traceManager.handleClick(x, y)) return;
 
-    if (traceManager.handleClick(input.x, input.y)) {
-        return;
-    }
+    // 2. Window Manager (Resize/Drag/Focus)
+    if (wm.pointerDown(x, y)) return;
 
-    isPointerDown = true;
-
-    if (desktop.handleClick(input.x, input.y, canvas.width, canvas.height)) {
-        return;
-    }
-
-    const panelTop = canvas.height - desktop.panelHeight;
-
-    if (input.y < panelTop) {
-        const icon = desktop.hitIcon(input.x, input.y);
-        if (icon) {
-            bus.emit("openApp", icon.id);
-            return;
-        }
-        wm.pointerDown(input.x, input.y);
-    }
+    // 3. Desktop/Taskbar Check
+    if (desktop.handleClick(x, y)) return;
 });
 
 canvas.addEventListener("mousemove", (e) => {
-    if (!isPointerDown) return;
     const rect = canvas.getBoundingClientRect();
-    const rawX = e.clientX - rect.left;
-    const rawY = e.clientY - rect.top;
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
 
-    const intensity = state.stress > 50 ? (state.stress - 50) * 0.1 : 0;
-    const driftX = (Math.random() - 0.5) * intensity;
-
-    const x = rawX + driftX;
-    const y = rawY;
-
-    wm.pointerMove(x, y, canvas.width, canvas.height, desktop.panelHeight);
+    wm.pointerMove(x, y, canvas);
 });
 
 canvas.addEventListener("mouseup", () => {
-    isPointerDown = false;
     wm.pointerUp();
 });
 
@@ -152,23 +342,18 @@ window.addEventListener("keydown", (e) => {
     wm.handleKey(e);
 });
 
-// Time & economy
-
+// Time & Economy Logic
 function advanceTimeAndEconomy(dt) {
     const deltaMinutes = dt * TIME_SPEED;
     state.time.minutes += deltaMinutes;
 
-    // Stress increases passively based on Police Heat
     if (state.policeHeat > 0) {
-        // More heat = faster stress gain
         const stressRate = state.policeHeat * 0.05;
         state.stress += stressRate * dt;
     }
-    // Natural stress decay
     if (state.policeHeat === 0 && state.stress > 0) {
         state.stress -= 1 * dt;
     }
-    // Cap at 100
     state.stress = Math.min(100, Math.max(0, state.stress));
 
     let hourTicks = 0;
@@ -253,66 +438,6 @@ function render() {
     const activeTitle = activeWin ? activeWin.title : null;
 
     desktop.render(ctx, canvas.width, canvas.height, activeTitle);
-
-    ctx.font = "14px system-ui";
-    ctx.fillStyle = "#ffcc66";
-    ctx.textAlign = "right";
-    ctx.fillText(`E€E: ${state.eightcoin.toFixed(1)}`, canvas.width - 400, canvas.height - 15);
-
-    const barW = 100;
-    const barH = 12;
-    const heatBarX = canvas.width - 340;
-    const heatBarY = canvas.height - 25;
-
-    // Label
-    ctx.font = "10px monospace";
-    ctx.fillStyle = "#aaa";
-    ctx.textAlign = "right";
-    ctx.fillText("HEAT", heatBarX - 5, heatBarY + 9);
-
-    // Bg
-    ctx.fillStyle = "#222";
-    ctx.fillRect(heatBarX, heatBarY, barW, barH);
-
-    const heatFillW = (state.policeHeat / 100) * barW;
-    let heatColor = "#00aaff";
-    if (state.policeHeat > 50) heatColor = "#ffaa00";
-    if (state.policeHeat > 80) heatColor = "#ff0000";
-
-    ctx.fillStyle = heatColor;
-    ctx.fillRect(heatBarX, heatBarY, heatFillW, barH);
-
-    // Border
-    ctx.strokeStyle = "#555";
-    ctx.lineWidth = 1;
-    ctx.strokeRect(heatBarX, heatBarY, barW, barH);
-
-    const barX = canvas.width - 220;
-    const barY = canvas.height - 25;
-
-    // Label
-    ctx.font = "10px monospace";
-    ctx.fillStyle = "#aaa";
-    ctx.textAlign = "right";
-    ctx.fillText("STRESS", barX - 5, barY + 9);
-
-    // Bg
-    ctx.fillStyle = "#222";
-    ctx.fillRect(barX, barY, barW, barH);
-
-    // Fill
-    const fillW = (state.stress / 100) * barW;
-    let color = "#00ff00";
-    if (state.stress > 50) color = "#ffff00";
-    if (state.stress > 80) color = "#ff0000";
-
-    ctx.fillStyle = color;
-    ctx.fillRect(barX, barY, fillW, barH);
-
-    // Border
-    ctx.strokeStyle = "#555";
-    ctx.lineWidth = 1;
-    ctx.strokeRect(barX, barY, barW, barH);
 
     wm.render(ctx);
     ctx.restore();

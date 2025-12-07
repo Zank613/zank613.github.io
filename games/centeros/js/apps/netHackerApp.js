@@ -1,9 +1,11 @@
 import { networkManager } from "../os/networkManager.js";
 import { state } from "../state.js";
 import { getOfficerById } from "../world/caseWorld.js";
+import { BaseApp } from "../core/baseApp.js";
 
-export class NetHackerApp {
+export class NetHackerApp extends BaseApp {
     constructor() {
+        super();
         this.lines = [
             "NetHacker v3.0",
             "Type: help",
@@ -95,15 +97,10 @@ export class NetHackerApp {
         }
 
         // Helper: make sure state.vpn / state.router exist so we don't crash
-        if (!state.vpn) {
-            state.vpn = { tier: 0, activeTier: 0, uptimeSeconds: 0 };
-        }
-        if (!state.router) {
-            state.router = { owned: false, active: false };
-        }
+        if (!state.vpn) state.vpn = { tier: 0, activeTier: 0, uptimeSeconds: 0 };
+        if (!state.router) state.router = { owned: false, active: false };
 
-        const stackStatusMatch = cmd.match(/^stack\s+status$/i);
-        if (stackStatusMatch) {
+        if (/^stack\s+status$/i.test(cmd)) {
             const installedTier = state.vpn.tier || 0;
             const activeTier = state.vpn.activeTier || 0;
             const routerOwned = !!state.router.owned;
@@ -113,43 +110,19 @@ export class NetHackerApp {
             this.append(`  AroundRouter: ${routerOwned ? (routerActive ? "ACTIVE" : "installed, OFF") : "NOT INSTALLED"}`);
             this.append(`  VPN installed tier: ${installedTier}`);
             this.append(`  VPN active chain: ${activeTier > 0 ? "Tier " + activeTier : "DISCONNECTED"}`);
-
-            // crude risk hint
-            let riskScore = 1.0;
-            if (!routerActive) riskScore *= 1.3;
-            if (activeTier === 0) riskScore *= 1.4;
-            else if (activeTier === 1) riskScore *= 1.1;
-            else if (activeTier === 2) riskScore *= 0.9;
-            else if (activeTier === 3) riskScore *= 0.7;
-            else if (activeTier >= 4) riskScore *= 0.5;
-
-            let label = "UNKNOWN";
-            if (riskScore >= 1.3) label = "SEVERE";
-            else if (riskScore >= 1.0) label = "HIGH";
-            else if (riskScore >= 0.75) label = "ELEVATED";
-            else label = "LOW";
-
-            this.append(`  Estimated trench profile: ${label}`);
             this.append("");
             return;
         }
 
-        const routerMatch = cmd.match(/^router\s+(on|off)$/i);
-        if (routerMatch) {
-            const mode = routerMatch[1].toLowerCase();
+        if (/^router\s+(on|off)$/i.test(cmd)) {
+            const mode = cmd.match(/^router\s+(on|off)$/i)[1].toLowerCase();
             if (!state.router.owned) {
-                this.append("Error: AroundRouter not installed. Check Underworld.");
+                this.append("Error: AroundRouter not installed.");
                 return;
             }
-            if (mode === "on") {
-                state.router.active = true;
-                this.statusLine = "AroundRouter path locked in.";
-                this.append("AroundRouter: ACTIVE.");
-            } else {
-                state.router.active = false;
-                this.statusLine = "AroundRouter disabled.";
-                this.append("AroundRouter: OFF.");
-            }
+            state.router.active = (mode === "on");
+            this.statusLine = state.router.active ? "AroundRouter path locked in." : "AroundRouter disabled.";
+            this.append(`AroundRouter: ${state.router.active ? "ACTIVE" : "OFF"}.`);
             this.append("");
             return;
         }
@@ -158,7 +131,6 @@ export class NetHackerApp {
             const installedTier = state.vpn.tier || 0;
             const activeTier = state.vpn.activeTier || 0;
             const up = state.vpn.uptimeSeconds || 0;
-
             this.append("VPN Status:");
             this.append(`  Installed max tier: ${installedTier}`);
             this.append(`  Active chain: ${activeTier > 0 ? "Tier " + activeTier : "DISCONNECTED"}`);
@@ -177,7 +149,6 @@ export class NetHackerApp {
                 state.vpn.uptimeSeconds = 0;
                 this.statusLine = "VPN chain disconnected.";
                 this.append("VPN: disconnected.");
-                this.append("");
                 return;
             }
 
@@ -187,7 +158,6 @@ export class NetHackerApp {
             }
             if (installedTier < desired) {
                 this.append(`Error: Highest purchased tier is ${installedTier}.`);
-                this.append("Use Underworld to buy higher VPN tiers.");
                 return;
             }
 
@@ -195,7 +165,6 @@ export class NetHackerApp {
             state.vpn.uptimeSeconds = 0;
             this.statusLine = `VPN tier ${desired} chain active.`;
             this.append(`VPN: connected to tier ${desired} chain.`);
-            this.append("");
             return;
         }
 
@@ -245,7 +214,6 @@ export class NetHackerApp {
             }
             this.append("Initiating AuthLink Protocol...");
 
-            // Dispatch event to open minigame
             const event = new CustomEvent("centeros-open-auth", {
                 detail: { policeId: this.policeHack.targetPoliceId }
             });
@@ -257,7 +225,6 @@ export class NetHackerApp {
 
         const crackMatch = cmd.match(/^crack\s+(.+)$/i);
         const crackMatchQuotes = cmd.match(/^crack\s+"([^"]+)"$/i);
-
         const arg = (crackMatchQuotes ? crackMatchQuotes[1] : (crackMatch ? crackMatch[1] : null));
 
         if (arg) {
@@ -273,7 +240,6 @@ export class NetHackerApp {
 
             if (!net) {
                 this.append(`No network with address 0x${hex.toUpperCase()}.`);
-                this.append("(Note: If this is a police blob, ensure you typed it exactly)");
                 return;
             }
 
@@ -283,11 +249,10 @@ export class NetHackerApp {
             }
 
             if (this.currentCrack) {
-                this.append("Crack already in progress. Wait for it to finish.");
+                this.append("Crack already in progress.");
                 return;
             }
 
-            // Check libs
             const wpa = net.wpa || 1;
             const libKey = `wp${wpa}`;
             if (!state.libs[libKey]) {
@@ -295,21 +260,12 @@ export class NetHackerApp {
                 return;
             }
 
-            // Setup Standard WiFi Crack
-            const baseDuration = 3;
-            const wpaMultiplier = 1 + (wpa - 1) * 1.5;
-            const duration = baseDuration * wpaMultiplier;
-
-            const baseTries = 50000;
-            const speedMult = 1 + (wpa - 1) * 0.7;
-            const triesPerSec = baseTries * speedMult;
-
             this.currentCrack = {
                 netId: net.id,
                 wpa,
-                duration,
+                duration: 3 * (1 + (wpa - 1) * 1.5),
                 elapsed: 0,
-                triesPerSecond: triesPerSec,
+                triesPerSecond: 50000 * (1 + (wpa - 1) * 0.7),
                 tries: 0
             };
 
@@ -337,51 +293,34 @@ export class NetHackerApp {
 
             if (job.elapsed >= job.duration) {
                 const net = networkManager.getNetworkById(job.netId);
-                if (net && !networkManager.isKnown(net.id)) {
-                    networkManager.markKnown(net.id);
-                }
+                if (net) networkManager.markKnown(net.id);
 
                 this.append(`Password found for ${net.ssid}: ${net.password}`);
-                this.append("Access key sold on black market. +1 E€E");
                 state.eightcoin += 1;
                 this.append("");
                 this.currentCrack = null;
                 this.statusLine = "";
             } else {
-                this.statusLine =
-                    `Cracking passwords (${Math.floor(job.tries)}) [WPA${job.wpa}]`;
+                this.statusLine = `Cracking passwords (${Math.floor(job.tries)}) [WPA${job.wpa}]`;
             }
         }
 
-        // VPN overuse tracking
-        if (!state.vpn) {
-            state.vpn = { tier: 0, activeTier: 0, uptimeSeconds: 0 };
-        }
-
-        if (state.vpn.activeTier && state.vpn.activeTier > 0) {
+        // VPN overuse
+        if (state.vpn && state.vpn.activeTier > 0) {
             state.vpn.uptimeSeconds = (state.vpn.uptimeSeconds || 0) + dt;
-
-            // If user is sitting on VPN4 for a long time, the world gets nervous.
             if (state.vpn.activeTier >= 4 && state.vpn.uptimeSeconds > 20) {
                 const oldHeat = state.policeHeat || 0;
-                const newHeat = Math.min(100, oldHeat + dt * 0.3);
-                state.policeHeat = newHeat;
-
-                // Occasionally hint that something feels off
-                if (Math.floor(oldHeat) !== Math.floor(newHeat)) {
-                    this.statusLine = "VPN4 side-channel noise observed on upstream nodes.";
+                state.policeHeat = Math.min(100, oldHeat + dt * 0.3);
+                if (Math.floor(oldHeat) !== Math.floor(state.policeHeat)) {
+                    this.statusLine = "VPN4 side-channel noise observed.";
                 }
-            }
-        } else {
-            if (state.vpn) {
-                state.vpn.uptimeSeconds = 0;
             }
         }
     }
 
     render(ctx, rect) {
-        ctx.fillStyle = "#050910";
-        ctx.fillRect(rect.x, rect.y, rect.width, rect.height);
+        // NetHacker uses a custom dark background
+        this.clear(ctx, rect, "#050910");
 
         ctx.font = "13px monospace";
         ctx.textBaseline = "top";
@@ -395,18 +334,15 @@ export class NetHackerApp {
         for (let i = 0; i < maxLinesVisible; i++) {
             const line = this.lines[start + i];
             if (line === undefined) continue;
-            const y = rect.y + 8 + i * lineHeight;
-            ctx.fillText(line, rect.x + 8, y);
+            ctx.fillText(line, rect.x + 8, rect.y + 8 + i * lineHeight);
         }
 
-        // Render status line
         if (this.statusLine) {
             const y = rect.y + rect.height - 40;
             ctx.fillStyle = "#80ff80";
             ctx.fillText(this.statusLine, rect.x + 8, y);
         }
 
-        // Render police hack progress if active
         if (this.policeHack.duration > 0 && !this.policeHack.cracked) {
             const y = rect.y + rect.height - 40;
             const pct = Math.floor((this.policeHack.timer / this.policeHack.duration) * 100);

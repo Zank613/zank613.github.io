@@ -1,98 +1,60 @@
 import { state } from "../state.js";
+import { BaseApp } from "../core/baseApp.js";
 
-export class VirusExterminatorApp {
+export class VirusExterminatorApp extends BaseApp {
     constructor() {
+        super();
         this.message = "";
         this.buttonRect = { x: 0, y: 0, w: 0, h: 0 };
     }
 
-    update(dt) {
-
-    }
-
-    handleKey(event) {
-
-    }
-
-    handleClick(localX, localY, contentRect) {
-        const { x, y, w, h } = this.buttonRect;
-        if (!x && !w) return;
-
-        const gx = localX;
-        const gy = localY;
-
-        if (gx >= x && gx <= x + w &&
-            gy >= y && gy <= y + h) {
-            this.runScan();
-        }
+    handleClick(globalX, globalY, contentRect) {
+        const { x, y } = this.getLocalCoords(globalX, globalY, contentRect);
+        const b = this.buttonRect;
+        if (this.isInside(x, y, b.x, b.y, b.w, b.h)) this.runScan();
     }
 
     runScan() {
-        const viruses = state.viruses || [];
-        const charges = state.virusTools?.exterminatorCharges || 0;
+        if ((state.virusTools?.exterminatorCharges || 0) <= 0) { this.message = "No charges. Buy in Underworld."; return; }
+        if (!state.viruses?.length) { this.message = "System clean."; return; }
 
-        if (charges <= 0) {
-            this.message = "No VirusExterminator uses left. Buy more from Underworld.";
-            return;
-        }
-
-        if (viruses.length === 0) {
-            this.message = "No active malware found. System is clean.";
-            return;
-        }
-
-        // Consume one charge and wipe infections
-        state.virusTools.exterminatorCharges = charges - 1;
+        state.virusTools.exterminatorCharges--;
         state.viruses = [];
-
-        this.message = "Scan complete. All visual malware signatures removed.";
+        this.message = "Scan complete. Malware removed.";
     }
 
     render(ctx, rect) {
+        this.clear(ctx, rect, "#15151b");
         ctx.save();
         ctx.translate(rect.x, rect.y);
-
-        ctx.fillStyle = "#15151b";
-        ctx.fillRect(0, 0, rect.width, rect.height);
 
         ctx.font = "13px system-ui";
         ctx.fillStyle = "#ffffff";
         ctx.textAlign = "left";
         ctx.textBaseline = "top";
+        ctx.fillText("VirusExterminator v0.1", 12, 8);
 
         const viruses = state.viruses || [];
         const charges = state.virusTools?.exterminatorCharges || 0;
-
-        ctx.fillText("VirusExterminator v0.1", 12, 8);
-
         ctx.fillStyle = "#bbbbbb";
         ctx.fillText(`Active infections: ${viruses.length}`, 12, 32);
         ctx.fillText(`Available scans: ${charges}`, 12, 52);
 
-        // Big button
-        const buttonW = 180;
-        const buttonH = 32;
-        const buttonX = 12;
-        const buttonY = 80;
-
-        this.buttonRect = { x: buttonX, y: buttonY, w: buttonW, h: buttonH };
-
-        ctx.fillStyle = (charges > 0) ? "#a83232" : "#444444";
-        ctx.fillRect(buttonX, buttonY, buttonW, buttonH);
+        this.buttonRect = { x: 12, y: 80, w: 180, h: 32 };
+        ctx.fillStyle = charges > 0 ? "#a83232" : "#444";
+        ctx.fillRect(12, 80, 180, 32);
 
         ctx.fillStyle = "#ffffff";
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
-        ctx.fillText("SCAN & EXTERMINATE", buttonX + buttonW / 2, buttonY + buttonH / 2);
+        ctx.fillText("SCAN & EXTERMINATE", 102, 96);
 
-        // Status message
         if (this.message) {
             ctx.textAlign = "left";
             ctx.textBaseline = "top";
             ctx.fillStyle = "#ff9966";
             ctx.fillText(this.message, 12, rect.height - 28);
         }
-
         ctx.restore();
     }
 }

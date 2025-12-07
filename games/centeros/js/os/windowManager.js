@@ -1,156 +1,233 @@
+import { themeManager } from "./theme.js";
+
 export class WindowManager {
     constructor() {
         this.windows = [];
         this.activeWindowId = null;
         this._nextId = 1;
-
-        this._draggingWindow = null;
-        this._dragOffsetX = 0;
-        this._dragOffsetY = 0;
+        this._dragState = null;
+        this.minWidth = 200;
+        this.minHeight = 150;
+        this.resizeHandleSize = 6;
+        this.workArea = { x: 0, y: 0, width: window.innerWidth, height: window.innerHeight };
     }
 
-    // appPreferredSize = { width, height } or undefined
-    createWindow(appId, title, canvasWidth, canvasHeight, appInstance, appPreferredSize, panelHeight = 40) {
-        const margin = 16;
-        const titleBarHeight = 24;
+    setWorkArea(rect) {
+        this.workArea = rect;
+    }
 
-        const minW = 360;
-        const minH = 220;
+    createWindow(appId, title, canvasWidth, canvasHeight, appInstance, appPreferredSize) {
+        const existing = this.windows.find(w => w.appId === appId);
+        if (existing) {
+            this.focusWindow(existing.id);
+            if (existing.isMinimized) existing.isMinimized = false;
+            return;
+        }
 
-        const maxW = Math.max(minW, canvasWidth - margin * 2);
-        const maxH = Math.max(
-            minH,
-            canvasHeight - panelHeight - margin * 2
-        );
-
-        let w = appPreferredSize?.width ?? Math.floor(canvasWidth * 0.65);
-        let h = appPreferredSize?.height ?? Math.floor(canvasHeight * 0.6);
-
-        w = Math.max(minW, Math.min(w, maxW));
-        h = Math.max(minH, Math.min(h, maxH));
-
-        const x = Math.round((canvasWidth - w) / 2);
-        const y = Math.round((canvasHeight - panelHeight - h) / 2);
+        const w = appPreferredSize?.width || 600;
+        const h = appPreferredSize?.height || 400;
+        const x = this.workArea.x + (this.workArea.width - w) / 2 + (this.windows.length * 20);
+        const y = this.workArea.y + (this.workArea.height - h) / 2 + (this.windows.length * 20);
 
         const win = {
             id: this._nextId++,
             appId,
             title,
-            x,
-            y,
+            x: Math.max(this.workArea.x, x),
+            y: Math.max(this.workArea.y, y),
             width: w,
             height: h,
-            titleBarHeight,
+            isMaximized: false,
+            isMinimized: false,
+            preMaxRect: null,
             appInstance,
-            isDragging: false
+            titleBarHeight: 28
         };
 
         this.windows.push(win);
-        this.activeWindowId = win.id;
+        this.focusWindow(win.id);
     }
 
-    _getWindowById(id) {
-        return this.windows.find(w => w.id === id) || null;
-    }
-
-    _bringToFront(win) {
-        const idx = this.windows.indexOf(win);
-        if (idx >= 0) {
-            this.windows.splice(idx, 1);
+    focusWindow(id) {
+        const win = this.windows.find(w => w.id === id);
+        if (win) {
+            this.activeWindowId = id;
+            win.isMinimized = false;
+            this.windows.splice(this.windows.indexOf(win), 1);
             this.windows.push(win);
         }
-        this.activeWindowId = win.id;
     }
 
-    _hitTestWindow(x, y) {
-        // topmost window wins
-        for (let i = this.windows.length - 1; i >= 0; i--) {
-            const w = this.windows[i];
-            if (x >= w.x && x <= w.x + w.width &&
-                y >= w.y && y <= w.y + w.height) {
-                return w;
+    minimizeWindow(id) {
+        const win = this.windows.find(w => w.id === id);
+        if (win) {
+            win.isMinimized = true;
+            if (this.activeWindowId === id) {
+                this.activeWindowId = null;
+                const visible = this.windows.filter(w => !w.isMinimized);
+                if (visible.length > 0) {
+                    this.activeWindowId = visible[visible.length - 1].id;
+                }
             }
         }
+    }
+
+    toggleMaximize(id) {
+        const win = this.windows.find(w => w.id === id);
+        if (!win) return;
+
+        if (win.isMaximized) {
+            win.x = win.preMaxRect.x;
+            win.y = win.preMaxRect.y;
+            win.width = win.preMaxRect.width;
+            win.height = win.preMaxRect.height;
+            win.isMaximized = false;
+            win.preMaxRect = null;
+        } else {
+            win.preMaxRect = { x: win.x, y: win.y, width: win.width, height: win.height };
+            win.x = this.workArea.x;
+            win.y = this.workArea.y;
+            win.width = this.workArea.width;
+            win.height = this.workArea.height;
+            win.isMaximized = true;
+        }
+    }
+
+    closeWindow(id) {
+        this.windows = this.windows.filter(w => w.id !== id);
+        if (this.activeWindowId === id) {
+            this.activeWindowId = this.windows.length ? this.windows[this.windows.length - 1].id : null;
+        }
+    }
+
+    _getResizeEdge(win, x, y) {
+        if (win.isMaximized) return null;
+        const m = this.resizeHandleSize;
+        const right = win.x + win.width;
+        const bottom = win.y + win.height;
+
+        const onLeft = x >= win.x - m && x <= win.x + m;
+        const onRight = x >= right - m && x <= right + m;
+        const onTop = y >= win.y - m && y <= win.y + m;
+        const onBottom = y >= bottom - m && y <= bottom + m;
+
+        if (onTop && onLeft) return 'nw';
+        if (onTop && onRight) return 'ne';
+        if (onBottom && onLeft) return 'sw';
+        if (onBottom && onRight) return 'se';
+        if (onTop) return 'n';
+        if (onBottom) return 's';
+        if (onLeft) return 'w';
+        if (onRight) return 'e';
+        return null;
+    }
+
+    _hitTestControls(win, x, y) {
+        const btnSize = 20;
+        const margin = 4;
+        let rightX = win.x + win.width - margin - btnSize;
+        const btnY = win.y + (win.titleBarHeight - btnSize) / 2;
+
+        if (x >= rightX && x <= rightX + btnSize && y >= btnY && y <= btnY + btnSize) return 'close';
+        rightX -= (btnSize + margin);
+        if (x >= rightX && x <= rightX + btnSize && y >= btnY && y <= btnY + btnSize) return 'maximize';
+        rightX -= (btnSize + margin);
+        if (x >= rightX && x <= rightX + btnSize && y >= btnY && y <= btnY + btnSize) return 'minimize';
         return null;
     }
 
     pointerDown(x, y) {
-        const win = this._hitTestWindow(x, y);
-        if (!win) {
-            this.activeWindowId = null;
-            return;
-        }
+        for (let i = this.windows.length - 1; i >= 0; i--) {
+            const win = this.windows[i];
+            if (win.isMinimized) continue;
 
-        this._bringToFront(win);
+            const edge = this._getResizeEdge(win, x, y);
+            const inRect = x >= win.x && x <= win.x + win.width && y >= win.y && y <= win.y + win.height;
+            const inTitle = inRect && y <= win.y + win.titleBarHeight;
 
-        const titleBarHeight = win.titleBarHeight;
-        const closeSize = 18;
-        const padding = 4;
+            if (edge || inRect) {
+                this.focusWindow(win.id);
 
-        const withinTitleBar = (y >= win.x && y <= win.y + titleBarHeight); // bug guard
-        const inTitleBar = (y >= win.y && y <= win.y + titleBarHeight);
+                if (edge) {
+                    this._dragState = {
+                        type: 'resize', winId: win.id, startX: x, startY: y,
+                        initialRect: { x: win.x, y: win.y, w: win.width, h: win.height }, edge
+                    };
+                    return true;
+                }
 
-        // close button rect
-        const closeX = win.x + win.width - closeSize - padding;
-        const closeY = win.y + (titleBarHeight - closeSize) / 2;
+                if (inTitle) {
+                    const control = this._hitTestControls(win, x, y);
+                    if (control === 'close') { this.closeWindow(win.id); return true; }
+                    if (control === 'maximize') { this.toggleMaximize(win.id); return true; }
+                    if (control === 'minimize') { this.minimizeWindow(win.id); return true; }
 
-        const inClose =
-            x >= closeX && x <= closeX + closeSize &&
-            y >= closeY && y <= closeY + closeSize;
+                    if (!win.isMaximized) {
+                        this._dragState = {
+                            type: 'move', winId: win.id, startX: x, startY: y,
+                            initialRect: { x: win.x, y: win.y }
+                        };
+                    }
+                    return true;
+                }
 
-        if (inClose) {
-            // close the window
-            const idx = this.windows.indexOf(win);
-            if (idx >= 0) {
-                this.windows.splice(idx, 1);
+                // Pass global coordinates (x, y) and the content rect to the app
+                const contentRect = this._getContentRect(win);
+                if (win.appInstance && win.appInstance.handleClick) {
+                    win.appInstance.handleClick(x, y, contentRect);
+                }
+                return true;
             }
-            this.activeWindowId = this.windows.length
-                ? this.windows[this.windows.length - 1].id
-                : null;
-            return;
         }
-
-        if (inTitleBar || withinTitleBar) {
-            // start dragging
-            this._draggingWindow = win;
-            this._dragOffsetX = x - win.x;
-            this._dragOffsetY = y - win.y;
-            win.isDragging = true;
-            return;
-        }
-
-        // otherwise pass click to app
-        const contentRect = this._getContentRect(win);
-        if (win.appInstance && win.appInstance.handleClick) {
-            win.appInstance.handleClick(x, y, contentRect);
-        }
+        this.activeWindowId = null;
+        return false;
     }
 
-    pointerMove(x, y, canvasWidth, canvasHeight, panelHeight) {
-        if (!this._draggingWindow) return;
+    pointerMove(x, y, canvas) {
+        let cursor = "default";
+        if (this._dragState) {
+            const ds = this._dragState;
+            const win = this.windows.find(w => w.id === ds.winId);
+            if (!win) { this._dragState = null; return; }
 
-        const win = this._draggingWindow;
-
-        let newX = x - this._dragOffsetX;
-        let newY = y - this._dragOffsetY;
-
-        const margin = 8;
-        const maxX = canvasWidth - win.width - margin;
-        const maxY = canvasHeight - panelHeight - margin;
-
-        newX = Math.max(margin, Math.min(newX, maxX));
-        newY = Math.max(margin, Math.min(newY, maxY));
-
-        win.x = newX;
-        win.y = newY;
-    }
-
-    pointerUp() {
-        if (this._draggingWindow) {
-            this._draggingWindow.isDragging = false;
-            this._draggingWindow = null;
+            if (ds.type === 'move') {
+                win.x = ds.initialRect.x + (x - ds.startX);
+                win.y = ds.initialRect.y + (y - ds.startY);
+            } else if (ds.type === 'resize') {
+                const dx = x - ds.startX;
+                const dy = y - ds.startY;
+                const init = ds.initialRect;
+                if (ds.edge.includes('e')) win.width = Math.max(this.minWidth, init.w + dx);
+                if (ds.edge.includes('s')) win.height = Math.max(this.minHeight, init.h + dy);
+                if (ds.edge.includes('w')) {
+                    const newW = Math.max(this.minWidth, init.w - dx);
+                    win.x = init.x + (init.w - newW);
+                    win.width = newW;
+                }
+                if (ds.edge.includes('n')) {
+                    const newH = Math.max(this.minHeight, init.h - dy);
+                    win.y = init.y + (init.h - newH);
+                    win.height = newH;
+                }
+            }
+            cursor = ds.type === 'resize' ? 'move' : 'default';
+        } else {
+            for (let i = this.windows.length - 1; i >= 0; i--) {
+                const win = this.windows[i];
+                if (win.isMinimized) continue;
+                const edge = this._getResizeEdge(win, x, y);
+                if (edge) {
+                    cursor = (edge === 'n' || edge === 's') ? 'ns-resize' :
+                        (edge === 'e' || edge === 'w') ? 'ew-resize' :
+                            (edge === 'ne' || edge === 'sw') ? 'nesw-resize' : 'nwse-resize';
+                    break;
+                }
+            }
         }
+        canvas.style.cursor = cursor;
     }
+
+    pointerUp() { this._dragState = null; }
 
     handleKey(e) {
         const win = this.windows.find(w => w.id === this.activeWindowId);
@@ -161,77 +238,73 @@ export class WindowManager {
 
     update(dt) {
         for (const w of this.windows) {
-            if (w.appInstance && w.appInstance.update) {
-                w.appInstance.update(dt);
-            }
+            if (w.appInstance && w.appInstance.update) w.appInstance.update(dt);
         }
     }
 
     _getContentRect(win) {
-        const padding = 8;
-        const titleBarHeight = win.titleBarHeight;
-
         return {
-            x: win.x + padding,
-            y: win.y + titleBarHeight + padding,
-            width: win.width - padding * 2,
-            height: win.height - titleBarHeight - padding * 2
+            x: win.x + 1,
+            y: win.y + win.titleBarHeight,
+            width: win.width - 2,
+            height: win.height - win.titleBarHeight - 1
         };
     }
 
     render(ctx) {
-        for (const w of this.windows) {
-            this._renderWindow(ctx, w);
+        const colors = themeManager.get();
+        const fonts = themeManager.getFonts();
+
+        for (const win of this.windows) {
+            if (win.isMinimized) continue;
+            const isActive = win.id === this.activeWindowId;
+            const r = { x: win.x, y: win.y, w: win.width, h: win.height };
+
+            ctx.shadowColor = "rgba(0,0,0,0.5)";
+            ctx.shadowBlur = isActive ? 20 : 5;
+            ctx.fillStyle = colors.windowBg;
+            ctx.fillRect(r.x, r.y, r.w, r.h);
+            ctx.shadowBlur = 0;
+
+            ctx.strokeStyle = isActive ? colors.windowBorderActive : colors.windowBorder;
+            ctx.lineWidth = 1;
+            ctx.strokeRect(r.x, r.y, r.w, r.h);
+
+            ctx.fillStyle = isActive ? colors.titleBarActive : colors.titleBar;
+            ctx.fillRect(r.x, r.y, r.w, win.titleBarHeight);
+
+            ctx.fillStyle = isActive ? colors.titleTextActive : colors.titleText;
+            ctx.font = fonts.title;
+            ctx.textAlign = "left";
+            ctx.textBaseline = "middle";
+            ctx.fillText(win.title, r.x + 8, r.y + win.titleBarHeight / 2);
+
+            this._renderControls(ctx, win, colors);
+
+            const contentRect = this._getContentRect(win);
+            ctx.save();
+            ctx.beginPath();
+            ctx.rect(contentRect.x, contentRect.y, contentRect.width, contentRect.height);
+            ctx.clip();
+            if (win.appInstance && win.appInstance.render) {
+                win.appInstance.render(ctx, contentRect);
+            }
+            ctx.restore();
         }
     }
 
-    _renderWindow(ctx, win) {
-        const r = {
-            x: win.x,
-            y: win.y,
-            width: win.width,
-            height: win.height
+    _renderControls(ctx, win, colors) {
+        const centerY = win.y + win.titleBarHeight / 2;
+        let x = win.x + win.width - 7 - 10;
+        const drawBtn = (color) => {
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.arc(x, centerY, 6, 0, Math.PI*2);
+            ctx.fill();
+            x -= 20;
         };
-
-        // window background
-        ctx.save();
-        ctx.fillStyle = "#222732";
-        ctx.strokeStyle = "#000000";
-        ctx.lineWidth = 1;
-        ctx.fillRect(r.x, r.y, r.width, r.height);
-        ctx.strokeRect(r.x + 0.5, r.y + 0.5, r.width - 1, r.height - 1);
-
-        // title bar
-        const titleBarHeight = win.titleBarHeight;
-        ctx.fillStyle = (win.id === this.activeWindowId) ? "#363c4a" : "#2a303d";
-        ctx.fillRect(r.x, r.y, r.width, titleBarHeight);
-
-        ctx.font = "12px system-ui";
-        ctx.textAlign = "left";
-        ctx.textBaseline = "middle";
-        ctx.fillStyle = "#f0f0f0";
-        ctx.fillText(win.title, r.x + 8, r.y + titleBarHeight / 2);
-
-        // close button
-        const closeSize = 16;
-        const padding = 4;
-        const closeX = r.x + r.width - closeSize - padding;
-        const closeY = r.y + (titleBarHeight - closeSize) / 2;
-
-        ctx.fillStyle = "#c94c4c";
-        ctx.fillRect(closeX, closeY, closeSize, closeSize);
-        ctx.fillStyle = "#ffffff";
-        ctx.font = "10px system-ui";
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-        ctx.fillText("×", closeX + closeSize / 2, closeY + closeSize / 2);
-
-        // content
-        const contentRect = this._getContentRect(win);
-        if (win.appInstance && win.appInstance.render) {
-            win.appInstance.render(ctx, contentRect);
-        }
-
-        ctx.restore();
+        drawBtn(colors.buttonClose);
+        drawBtn(colors.buttonMax);
+        drawBtn(colors.buttonMin);
     }
 }
