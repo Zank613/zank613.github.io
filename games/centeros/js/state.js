@@ -82,5 +82,40 @@ export const state = {
         totalDecided: 0,
         correctCriminalCalls: 0,
         lastVerdictSummary: ""
-    }
+    },
+
+    viruses: [],
+
+    virusTools: {
+        exterminatorCharges: 0
+    },
+
+    // Apps that are available to launch in the OS
+    installedApps: [
+        // core / default apps that should always exist
+        "cases",          // Case Manager
+        "citizen",        // Citizen_DB
+        "id",             // ID_DB
+        "police",         // Police_DB
+        "sim",            // Sim_DB
+        "tel",            // TelScanner
+        "nethacker",      // NetHacker
+        "notepad",        // Notepad
+        "shop",           // Underworld Market
+        "net",            // Network Tools
+        "duty",           // Duty Board
+        "stressReducer",  // Stress app
+        "browser",        // Browser
+        "virusex"         // VirusExterminator
+    ],
 };
+
+export function isAppInstalled(id) {
+    return state.installedApps.includes(id);
+}
+
+export function installApp(id) {
+    if (!state.installedApps.includes(id)) {
+        state.installedApps.push(id);
+    }
+}

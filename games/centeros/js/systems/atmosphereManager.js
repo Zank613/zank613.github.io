@@ -1,9 +1,13 @@
+import { state } from "../state.js";
+
 export class AtmosphereManager {
     constructor() {
+        // Webcam
         this.webcamActive = false;
         this.webcamTimer = 0;
         this.nextWebcamEvent = Math.random() * 60 + 30;
 
+        // Glitch
         this.glitchActive = false;
         this.glitchIntensity = 0;
         this.glitchTimer = 0;
@@ -13,8 +17,7 @@ export class AtmosphereManager {
         this.nextWebcamEvent -= dt;
         if (this.nextWebcamEvent <= 0) {
             this.webcamActive = true;
-            this.webcamTimer = Math.random() * 3 + 2;
-
+            this.webcamTimer = Math.random() * 3 + 2; // 2–5 seconds
             this.nextWebcamEvent = Math.random() * 120 + 60;
         }
 
@@ -31,18 +34,26 @@ export class AtmosphereManager {
                 this.glitchActive = false;
             }
         } else {
-            // Random tiny chance to glitch per frame
-            // 0.05% chance per frame @ 60fps = approx once every 33 seconds
-            if (Math.random() < 0.0005) {
-                this.triggerGlitch(0.15);
+            // If there are active viruses, they can occasionally cause glitches
+            const viruses = state.viruses || [];
+            if (viruses.length > 0) {
+                // Base chance per second, scaled by dt and number of viruses
+                const basePerSecond = 0.02;  // tweakable: 2% per second per virus
+                const chance = basePerSecond * viruses.length * dt;
+                if (Math.random() < chance) {
+                    // Slightly stronger glitches when infected
+                    const duration = 0.15 + Math.random() * 0.25;
+                    this.triggerGlitch(duration);
+                }
             }
+            // Otherwise: no ambient glitches at all.
         }
     }
 
-    triggerGlitch(duration) {
+    triggerGlitch(duration = 0.2) {
         this.glitchActive = true;
         this.glitchTimer = duration;
-        this.glitchIntensity = Math.random() * 5 + 3;
+        this.glitchIntensity = Math.random() * 5 + 3; // 3–8px
     }
 
     applyGlitchTransform(ctx) {
@@ -54,14 +65,10 @@ export class AtmosphereManager {
     }
 
     renderOverlay(ctx, width, height) {
-        // Webcam Light (Top Right usually, or Top Center)
-        // Let's put it next to the "bezel" of the screen
         if (this.webcamActive) {
-            // Position relative to center top, slightly right
             const x = width / 2 + 120;
             const y = 12;
 
-            // Green glow
             ctx.save();
             ctx.shadowBlur = 10;
             ctx.shadowColor = "#00ff00";
@@ -71,7 +78,6 @@ export class AtmosphereManager {
             ctx.fill();
             ctx.restore();
         }
-
         if (this.glitchActive && Math.random() > 0.7) {
             ctx.fillStyle = `rgba(255, 255, 255, ${Math.random() * 0.15})`;
             ctx.fillRect(0, Math.random() * height, width, Math.random() * 50);

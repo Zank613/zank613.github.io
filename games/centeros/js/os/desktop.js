@@ -1,41 +1,67 @@
-import { state } from "../state.js";
+import {isAppInstalled, state} from "../state.js";
 import { fs } from "./fileSystem.js";
 
 export class Desktop {
-    constructor(networkManager) {
+    constructor(networkManager, atmosphereManager) {
         this.panelHeight = 36;
         this.wallpaper = new Image();
         this.wallpaperLoaded = false;
         this.networkManager = networkManager;
+        this.atmosphereManager = atmosphereManager;
 
         this.wallpaper.src = "wallpaper.jpg";
         this.wallpaper.onload = () => this.wallpaperLoaded = true;
 
-        this.icons = [
-            // Column 1
-            { id: "cases",     label: "Cases",      color: "#37a0ff", x: 24, y: 48 },
-            { id: "citizen",   label: "Citizen_DB", color: "#66d9ef", x: 24, y: 120 },
-            { id: "id",        label: "ID_DB",      color: "#ffb347", x: 24, y: 192 },
-            { id: "police",    label: "Police_DB",  color: "#ff6666", x: 24, y: 264 },
-            { id: "sim",       label: "Sim_DB",     color: "#88ff88", x: 24, y: 336 },
-            { id: "tel",       label: "TelScan",    color: "#ccaaff", x: 24, y: 408 },
+        // master icon list
+        this.allIcons = [
+            { id: "cases",     label: "Cases",           color: "#37a0ff" },
+            { id: "citizen",   label: "Citizen_DB",      color: "#66d9ef" },
+            { id: "id",        label: "ID_DB",           color: "#ffb347" },
+            { id: "police",    label: "Police_DB",       color: "#ff6666" },
+            { id: "sim",       label: "Sim_DB",          color: "#88ff88" },
+            { id: "tel",       label: "TelScan",         color: "#ccaaff" },
 
-            // Column 2
-            { id: "nethacker", label: "NetHacker",   color: "#ffcc00", x: 108, y: 48 },
-            { id: "notepad",   label: "Notes",      color: "#8888ff", x: 108, y: 120 },
-            { id: "miner",     label: "Miner",      color: "#ff8800", x: 108, y: 192 },
-            { id: "remote",    label: "Remote",     color: "#66ff99", x: 108, y: 264 },
-            { id: "shop",      label: "Shop",       color: "#ff7043", x: 108, y: 336 },
-            { id: "net",       label: "Net",        color: "#4caf50", x: 108, y: 408 },
+            { id: "nethacker", label: "NetHacker",       color: "#ffcc00" },
+            { id: "notepad",   label: "Notes",           color: "#8888ff" },
+            { id: "miner",     label: "Miner",           color: "#ff8800" },
+            { id: "remote",    label: "Remote",          color: "#66ff99" },
+            { id: "shop",      label: "Shop",            color: "#ff7043" },
+            { id: "net",       label: "Net",             color: "#4caf50" },
 
-            // Column 3
-            { id: "duty",                   label: "DutyBoard",  color: "#999999", x: 192, y: 48 },
-            { id: "stressReducer",          label: "StressReducer", color: "#dc2acf", x: 192, y: 120},
-            { id: "browser",                label: "Browser", color: "#9e9393", x: 192, y: 192}
+            { id: "duty",          label: "DutyBoard",       color: "#999999" },
+            { id: "stressReducer", label: "StressReducer",   color: "#dc2acf" },
+            { id: "browser",       label: "Browser",         color: "#9e9393" },
+            { id: "virusex",       label: "VirusExterminator", color: "#ea0000" },
         ];
+
+        // actual rendered icons
+        this.icons = [];
 
         this.wifiHitRect = null;
         this.wifiMenuRect = null;
+
+        this.refreshIcons();
+    }
+
+    refreshIcons() {
+        const installed = this.allIcons.filter(icon => isAppInstalled(icon.id));
+
+        const startX = 24;
+        const startY = 48;
+        const colWidth = 84;  // distance between columns
+        const rowHeight = 72; // distance between rows
+        const columns = 3;    // how many columns before wrapping
+
+        this.icons = installed.map((icon, index) => {
+            const col = index % columns;
+            const row = Math.floor(index / columns);
+
+            return {
+                ...icon,
+                x: startX + col * colWidth,
+                y: startY + row * rowHeight
+            };
+        });
     }
 
     // Helper to request opening an app
@@ -159,6 +185,8 @@ export class Desktop {
     }
 
     render(ctx, canvasWidth, canvasHeight, activeTitle) {
+        this.refreshIcons();
+
         // 1. Wallpaper
         if (this.wallpaperLoaded) {
             ctx.drawImage(this.wallpaper, 0, 0, canvasWidth, canvasHeight);
@@ -314,6 +342,24 @@ export class Desktop {
             height: iconHeight
         };
         this.renderWifiIcon(ctx, wifiCenterX, wifiCenterY);
+
+        if (this.atmosphereManager && this.atmosphereManager.webcamActive) {
+            ctx.save();
+
+            const ph = this.panelHeight;
+            // Place it just to the left of the Wi-Fi icon
+            const dotX = w - 80;
+            const dotY = h - ph / 2;
+
+            ctx.beginPath();
+            ctx.arc(dotX, dotY, 4, 0, Math.PI * 2);
+            ctx.fillStyle = "#4db4ff";
+            ctx.fill();
+
+            // subtle glow
+            ctx.shadowBlur = 8;
+            ctx.shadowColor = "rgba(77, 180, 255, 0.8)";
+        }
 
         // Clock
         const baseMinutes = 21 * 60;

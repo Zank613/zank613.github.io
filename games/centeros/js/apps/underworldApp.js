@@ -1,4 +1,4 @@
-import { state } from "../state.js";
+import { state, installApp } from "../state.js";
 
 export class UnderworldApp {
     constructor() {
@@ -82,6 +82,13 @@ export class UnderworldApp {
                 label: "VPN 4",
                 desc: "Experimental chain. Max protection, unstable if overused.",
                 cost: 14
+            },
+            {
+                id: "virusExterminator",
+                type: "consumable",
+                label: "VirusExterminator",
+                desc: "One-use malware purge. Removes all active visual/glitch infections.",
+                cost: 3
             }
         ];
         this.message = "";
@@ -108,6 +115,9 @@ export class UnderworldApp {
             const currentTier = (state.vpn && state.vpn.tier) || 0;
             const requiredTier = item.tier || 0;
             return currentTier >= requiredTier;
+        }
+        if (item.type === "consumable"){
+            return false;
         }
         return false;
     }
@@ -140,17 +150,26 @@ export class UnderworldApp {
         } else if (item.id === "eightminer") {
             if (!state.miner) state.miner = {};
             state.miner.owned = true;
+            installApp("miner");
         } else if (item.id === "remote") {
             if (!state.remote) state.remote = {};
             state.remote.owned = true;
+            installApp("remote");
         } else if (item.type === "router") {
             if (!state.router) state.router = {};
             state.router.owned = true;
+            installApp("router");
         } else if (item.type === "vpn") {
             if (!state.vpn) state.vpn = { tier: 0 };
             const current = state.vpn.tier || 0;
             const targetTier = item.tier || 0;
             state.vpn.tier = Math.max(current, targetTier);
+        } else if (item.id === "virusExterminator") {
+            if (!state.virusTools) {
+                state.virusTools = { exterminatorCharges: 0 };
+            }
+            state.virusTools.exterminatorCharges++;
+            this.message = `VirusExterminator acquired. Uses: ${state.virusTools.exterminatorCharges}`;
         }
 
         this.message = `${item.label} purchased and installed.`;

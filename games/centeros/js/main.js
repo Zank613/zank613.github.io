@@ -15,11 +15,10 @@ import { AtmosphereManager } from "./systems/atmosphereManager.js";
 const bus = new EventBus();
 const { canvas, ctx } = createCanvasContext("centerCanvas");
 
-const desktop = new Desktop(networkManager);
-const wm = new WindowManager();
-
-const traceManager = new TraceManager();
 const atmosphereManager = new AtmosphereManager();
+const desktop = new Desktop(networkManager, atmosphereManager);
+const wm = new WindowManager();
+const traceManager = new TraceManager();
 
 if (typeof state.stress === 'undefined') state.stress = 0;
 
