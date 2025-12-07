@@ -107,7 +107,8 @@ export const state = {
         "duty",           // Duty Board
         "stressReducer",  // Stress app
         "browser",        // Browser
-        "virusex"         // VirusExterminator
+        "virusex",         // VirusExterminator
+        "taskman",
     ],
 };
 

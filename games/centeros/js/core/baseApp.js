@@ -1,7 +1,14 @@
 import { themeManager } from "../os/theme.js";
 
 export class BaseApp {
-    constructor() {}
+    constructor() {
+        this.windowManager = null; // Reference to WM
+    }
+
+    // Called by main.js when app is launched
+    setWindowManager(wm) {
+        this.windowManager = wm;
+    }
 
     update(dt) {}
 
@@ -14,7 +21,7 @@ export class BaseApp {
 
     handleClick(x, y, rect) {}
 
-    // Helpers
+    // --- Helpers ---
 
     getColors() { return themeManager.get(); }
     getFonts() { return themeManager.getFonts(); }
@@ -24,7 +31,6 @@ export class BaseApp {
         ctx.fillRect(rect.x, rect.y, rect.width, rect.height);
     }
 
-    // Helper to get coordinates relative to the window content area
     getLocalCoords(globalX, globalY, contentRect) {
         return {
             x: globalX - contentRect.x,
@@ -32,7 +38,6 @@ export class BaseApp {
         };
     }
 
-    // Helper to check if a local point is inside a rectangle
     isInside(localX, localY, x, y, w, h) {
         return localX >= x && localX <= x + w && localY >= y && localY <= y + h;
     }

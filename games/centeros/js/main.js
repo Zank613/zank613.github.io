@@ -34,6 +34,7 @@ import { BrowserApp } from "./apps/browserApp.js";
 import { VirusExterminatorApp } from "./apps/virusExterminatorApp.js";
 import { SettingsApp } from "./apps/settingsApp.js";
 import { NetToolsApp } from "./apps/netToolsApp.js";
+import { TaskManagerApp } from "./apps/taskManagerApp.js";
 
 // ==============================================
 // 1. REGISTER APPS
@@ -129,6 +130,11 @@ appRegistry.register("virusex", {
     preferredSize: {width: 300, height: 250},
     createInstance: () => new VirusExterminatorApp()
 });
+appRegistry.register("taskman", {
+    title: "Task Manager",
+    preferredSize: { width: 400, height: 350 },
+    createInstance: () => new TaskManagerApp()
+});
 
 // ==============================================
 // 2. ENGINE INITIALIZATION
@@ -177,6 +183,7 @@ desktop.registerIcon({ id: "stressReducer", label: "StressReducer",   color: "#d
 desktop.registerIcon({ id: "browser",       label: "Browser",         color: "#9e9393" });
 desktop.registerIcon({ id: "virusex",       label: "VirusExterminator", color: "#ea0000" });
 desktop.registerIcon({ id: "settings", label: "Settings", color: "#888888" });
+desktop.registerIcon({ id: "taskman", label: "TaskMgr", color: "#55aa55" });
 
 desktop.setCustomPanelRenderer((ctx, w, h, ph) => {
     const fonts = themeManager.getFonts();
