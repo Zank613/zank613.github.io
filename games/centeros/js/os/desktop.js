@@ -20,6 +20,10 @@ export class Desktop {
         this.taskbarSize = 40;
         this.taskbarRect = { x:0, y:0, w:0, h:0 };
         this.renderedWindows = [];
+
+        window.addEventListener("centeros-app-installed", () => {
+            this.refreshIconPositions();
+        });
     }
 
     setWindowManager(wm) {

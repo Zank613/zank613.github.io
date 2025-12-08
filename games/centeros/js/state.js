@@ -111,6 +111,23 @@ export const state = {
         "browser",        // Browser
         "virusex",         // VirusExterminator
         "taskman",
+        "postman",
+    ],
+
+    reputation: {
+        police: 0,      // +High = Heat decays faster, -High = Police investigate YOU
+        underworld: 0   // +High = Cheaper tools, -High = "Cop Tax" in market
+    },
+
+    emails: [
+        {
+            id: "welcome_msg",
+            sender: "admin@centeros.net",
+            subject: "Welcome to CenterOS",
+            body: "Your system has been successfully registered.\n\nRemember: All activity is monitored for quality assurance.\n\n- The Center",
+            read: false,
+            timestamp: "Day 1 20:55"
+        }
     ],
 };
 
@@ -121,5 +138,6 @@ export function isAppInstalled(id) {
 export function installApp(id) {
     if (!state.installedApps.includes(id)) {
         state.installedApps.push(id);
+        window.dispatchEvent(new CustomEvent("centeros-app-installed"));
     }
 }

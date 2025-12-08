@@ -398,6 +398,7 @@ export function evaluateCaseVerdict(action, threat, reason = "submit") {
         summary = "No clear verdict submitted before the end of the night. Superiors are not impressed.";
         score -= 3;
         state.policeHeat += 6;
+        state.reputation.police -= 5;
     } else {
         const truthCriminal = truth.is_criminal;
         const truthThreat = truth.threat_level;
@@ -444,16 +445,21 @@ export function evaluateCaseVerdict(action, threat, reason = "submit") {
         } else if (score >= 2) {
             summary += "Overall: solid work.";
             state.eightcoin += 2;
-            state.policeHeat = Math.max(0, state.policeHeat - 3);
+            state.policeHeat = Math.max(0, state.policeHeat - 5);
+
+            state.reputation.police += 5;
+            state.reputation.underworld -= 2;
         } else if (score >= 0) {
             summary += "Overall: mixed, committee is unconvinced.";
             state.policeHeat += 2;
         } else if (score >= -3) {
             summary += "Overall: poor judgement.";
             state.policeHeat += 5;
+            state.reputation.police -= 2;
         } else {
             summary += "Overall: disastrous judgement.";
             state.policeHeat += 10;
+            state.reputation.police -= 3;
         }
 
         state.caseStats.totalDecided += 1;

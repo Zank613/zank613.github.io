@@ -11,10 +11,12 @@ import { TraceManager } from "./systems/traceManager.js";
 import { AtmosphereManager } from "./systems/atmosphereManager.js";
 import { themeManager } from "./os/theme.js";
 import { generateSiteWorld } from "./world/siteGenerator.js";
+import { DebugManager } from "./core/debug.js";
 
 // Game State
 import { state, TIME_CONFIG } from "./state.js";
 import { generateTonightWorld, evaluateCaseVerdict, getOfficerById } from "./world/caseWorld.js";
+import { generateDailyEmails, onJobAccepted } from "./world/emailGenerator.js";
 
 // === APP IMPORTS ===
 import { NetHackerApp } from "./apps/netHackerApp.js";
@@ -36,6 +38,7 @@ import { VirusExterminatorApp } from "./apps/virusExterminatorApp.js";
 import { SettingsApp } from "./apps/settingsApp.js";
 import { NetToolsApp } from "./apps/netToolsApp.js";
 import { TaskManagerApp } from "./apps/taskManagerApp.js";
+import { PostmanApp } from "./apps/postmanApp.js";
 
 // ==============================================
 // 1. REGISTER APPS
@@ -136,6 +139,11 @@ appRegistry.register("taskman", {
     preferredSize: { width: 400, height: 350 },
     createInstance: () => new TaskManagerApp()
 });
+appRegistry.register("postman", {
+    title: "Postman",
+    preferredSize: { width: 500, height: 400 },
+    createInstance: () => new PostmanApp()
+});
 
 // ==============================================
 // 2. ENGINE INITIALIZATION
@@ -148,6 +156,8 @@ const atmosphereManager = new AtmosphereManager();
 const wm = new WindowManager();
 const desktop = new Desktop(networkManager, atmosphereManager);
 const traceManager = new TraceManager();
+
+const debugManager = new DebugManager(traceManager);
 
 desktop.setWindowManager(wm);
 desktop.setTaskbarPosition("bottom");
@@ -185,6 +195,7 @@ desktop.registerIcon({ id: "browser",       label: "Browser",         color: "#9
 desktop.registerIcon({ id: "virusex",       label: "VirusExterminator", color: "#ea0000" });
 desktop.registerIcon({ id: "settings", label: "Settings", color: "#888888" });
 desktop.registerIcon({ id: "taskman", label: "TaskMgr", color: "#55aa55" });
+desktop.registerIcon({ id: "postman", label: "Email", color: "#dd5522" });
 
 desktop.setCustomPanelRenderer((ctx, w, h, ph) => {
     const fonts = themeManager.getFonts();
@@ -267,6 +278,10 @@ window.addEventListener("centeros-trigger-trace", (e) => {
     if (!traceManager.active) {
         traceManager.triggerTrace(difficulty);
     }
+});
+
+window.addEventListener("centeros-job-accepted", (e) => {
+    onJobAccepted(e.detail.job);
 });
 
 generateTonightWorld(state.time.day);
@@ -442,7 +457,8 @@ function setupSiteGeneration() {
     // Re-generate content on every new day or when specifically requested
     window.addEventListener("centeros-new-day", () => {
         generateSiteWorld(state.time.day, state.world.citizens, state.world.case);
-        console.log("Site content regenerated for new day.");
+        generateDailyEmails();
+        console.log("New day: Sites and Emails generated.");
     });
 
     // Listen for the refresh event

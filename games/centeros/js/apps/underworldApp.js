@@ -21,6 +21,20 @@ export class UnderworldApp extends BaseApp {
         this.renderRect = {width: 0};
     }
 
+    getPrice(baseCost) {
+        if (baseCost === 0) return 0;
+
+        let multiplier = 1.0;
+        const rep = state.reputation.underworld;
+
+        // High Rep = Discount (up to 50% off)
+        if (rep > 0) multiplier -= Math.min(0.5, rep / 100);
+        // Low Rep = Tax (up to 100% extra)
+        if (rep < 0) multiplier += Math.min(1.0, Math.abs(rep) / 50);
+
+        return Math.floor(baseCost * multiplier);
+    }
+
     isInstalled(item) {
         if (item.type === "lib") return !!state.libs && !!state.libs[item.id];
         if (item.id === "eightminer") return !!state.miner?.owned;
@@ -31,16 +45,19 @@ export class UnderworldApp extends BaseApp {
     }
 
     buyItem(item) {
-        if (this.isInstalled(item)) { this.message = "Already installed."; return; }
-        if (state.eightcoin < item.cost) { this.message = "Not enough E€E."; return; }
+        const finalCost = this.getPrice(item.cost);
 
-        state.eightcoin -= item.cost;
+        if (this.isInstalled(item)) { this.message = "Already installed."; return; }
+        if (state.eightcoin < finalCost) { this.message = "Not enough E€E."; return; }
+
+        state.eightcoin -= finalCost;
         if (item.type === "lib") { state.libs = state.libs || {}; state.libs[item.id] = true; }
         else if (item.id === "eightminer") { state.miner = state.miner || {}; state.miner.owned = true; installApp("miner"); }
         else if (item.id === "remote") { state.remote = state.remote || {}; state.remote.owned = true; installApp("remote"); }
         else if (item.type === "router") { state.router = state.router || {}; state.router.owned = true; installApp("router"); }
         else if (item.type === "vpn") { state.vpn = state.vpn || { tier: 0 }; state.vpn.tier = Math.max(state.vpn.tier, item.tier); }
         else if (item.id === "virusExterminator") { state.virusTools = state.virusTools || { exterminatorCharges: 0 }; state.virusTools.exterminatorCharges++; }
+
         this.message = `${item.label} purchased.`;
     }
 
@@ -48,12 +65,10 @@ export class UnderworldApp extends BaseApp {
         const { x, y } = this.getLocalCoords(globalX, globalY, contentRect);
         const rectWidth = this.renderRect.width;
 
-        if (y < 32) return;
-
+        if (y < 40) return; // Header area
         const rowH = 56;
         for (let i = 0; i < this.items.length; i++) {
-            const rowTop = 32 + i * rowH;
-
+            const rowTop = 40 + i * rowH;
             const buttonW = 90;
             const buttonX = rectWidth - buttonW - 24;
             const buttonY = rowTop + 6;
@@ -72,19 +87,31 @@ export class UnderworldApp extends BaseApp {
         ctx.save();
         ctx.translate(rect.x, rect.y);
 
+        const rep = state.reputation.underworld;
+        let repStatus = "Neutral";
+        let repColor = "#888";
+        if (rep > 10) { repStatus = "Trusted"; repColor = "#4f4"; }
+        if (rep < -10) { repStatus = "Suspicious"; repColor = "#f44"; }
+
         ctx.font = "12px system-ui";
         ctx.fillStyle = "#bbbbbb";
         ctx.textAlign = "left";
         ctx.textBaseline = "top";
         ctx.fillText(`Balance: E€E ${state.eightcoin.toFixed(1)}`, 16, 2);
 
+        ctx.textAlign = "right";
+        ctx.fillText(`Rep:`, rect.width - 80, 2);
+        ctx.fillStyle = repColor;
+        ctx.fillText(repStatus, rect.width - 16, 2);
+
         const rowH = 56;
-        const startY = 32;
+        const startY = 40;
 
         this.items.forEach((item, index) => {
             const y = startY + index * rowH;
             const installed = this.isInstalled(item);
-            const affordable = state.eightcoin >= item.cost;
+            const finalCost = this.getPrice(item.cost);
+            const affordable = state.eightcoin >= finalCost;
 
             ctx.fillStyle = "rgba(255,255,255,0.03)";
             ctx.fillRect(8, y - 8, rect.width - 16, rowH - 4);
@@ -97,7 +124,14 @@ export class UnderworldApp extends BaseApp {
 
             ctx.textAlign = "right";
             ctx.fillStyle = "#ffcc66";
-            ctx.fillText(item.cost === 0 ? "Included" : `Cost: ${item.cost}`, rect.width - 130, y);
+
+            // Show price change indicator
+            let costText = `Cost: ${finalCost}`;
+            if (item.cost === 0) costText = "Included";
+            else if (finalCost < item.cost) costText += " (Sale)";
+            else if (finalCost > item.cost) costText += " (+Tax)";
+
+            ctx.fillText(costText, rect.width - 130, y);
 
             const btnX = rect.width - 114, btnY = y + 6;
             const btnColor = installed ? "#444" : (!affordable ? "#333" : "#2d7a3e");
@@ -109,16 +143,13 @@ export class UnderworldApp extends BaseApp {
             ctx.fillText(installed ? "Installed" : (!affordable ? "Locked" : "Buy"), btnX + 45, btnY + 6);
         });
 
-        // Set content height for scrolling
-        this.contentHeight = startY + this.items.length * rowH + 40; // 40 for bottom padding
+        this.contentHeight = startY + this.items.length * rowH + 40;
 
         if (this.message) {
-            // Draw message at bottom of CONTENT, not bottom of window
             ctx.textAlign = "left";
             ctx.fillStyle = "#ff9966";
             ctx.fillText(this.message, 16, this.contentHeight - 20);
         }
         ctx.restore();
     }
-
 }

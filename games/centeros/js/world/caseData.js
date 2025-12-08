@@ -35,6 +35,51 @@ export const HAIR_COLOR_POOL = [
 ];
 
 // ==========================================
+// PROCEDURAL WEB CONTENT POOLS
+// ==========================================
+
+export const FLAVOR_POSTS_PFT = [
+    { title: "Lost Dog: 'Buster'", content: "Small terrier, missing left ear. Last seen near Sector 4 park. Reward: 1 E€E.", author: "DogLover99" },
+    { title: "Found Keys", content: "Found a set of keys with a rabbit keychain on Main St. Turned them into the police station.", author: "GoodSamaritan" },
+    { title: "Weird Noise in Sky?", content: "Did anyone else hear that humming sound last night around 3AM? It shook my windows.", author: "Insomniac_Dave" },
+    { title: "Missed Connection: Blue Coat", content: "You were on the mag-lev, reading a book about mycology. I was too shy to say hi.", author: "LonelyHeart" },
+    { title: "Selling: Old GPU", content: "GTX 1080 for sale. Good condition. Will trade for food stamps.", author: "Miner4Life" },
+    { title: "PSA: Check your locks", content: "There's been a string of break-ins on 5th avenue. Stay safe everyone.", author: "NeighborhoodWatch" }
+];
+
+export const CONSPIRACIES = [
+    { title: "The Birds Are Drones", content: "I caught one recharging on a power line. Open your eyes sheeple!", author: "TruthSeeker" },
+    { title: "CenterOS Steals Dreams", content: "The new update accesses your neural patterns during REM sleep. Use a foil hat.", author: "Tinfoilhat" },
+    { title: "The Moon is a Hologram", content: "It flickered last night. I saw the grid lines. NASA is lying.", author: "SpaceWatcher" },
+    { title: "Water Turnin' Frogs Gay", content: "It's the chemicals they put in the water supply. I have proof.", author: "BioHacker" },
+    { title: "The 8th Coin", content: "There is a secret 8th denomination of Eightcoin that controls the world economy.", author: "CryptoKing" }
+];
+
+export const ANON_REPLIES = [
+    "Fake and gay.",
+    "Big if true.",
+    "OP is a fed.",
+    "Source: trust me bro.",
+    "I saw it too!",
+    "Delete this.",
+    "Based.",
+    "Take your meds.",
+    "Interesting theory...",
+    "Bump."
+];
+
+export const STOCK_NAMES = [
+    { s: "CNT", n: "Center Inc." },
+    { s: "OMNI", n: "OmniCorp" },
+    { s: "VOID", n: "VoidSystems" },
+    { s: "BLUE", n: "BlueWater" },
+    { s: "NANO", n: "NanoTech" },
+    { s: "AERO", n: "AeroDynamics" },
+    { s: "BIO", n: "BioGen" },
+    { s: "CYB", n: "CyberDyne" }
+];
+
+// ==========================================
 // CRIME TEMPLATES
 // ==========================================
 
