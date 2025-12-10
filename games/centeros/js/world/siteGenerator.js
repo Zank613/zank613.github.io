@@ -1,7 +1,5 @@
-// centeros/js/world/siteGenerator.js
-
 import { state } from "../state.js";
-import { FLAVOR_POSTS_PFT, CONSPIRACIES, ANON_REPLIES, STOCK_NAMES } from "./caseData.js";
+import { FLAVOR_POSTS_PFT, CONSPIRACIES, ANON_REPLIES, STOCK_NAMES, LIFELOG_POSTS, LIFELOG_SUSPICIOUS } from "./caseData.js";
 
 const RAW_SITE_SCHEMAS = {
     "pleasefindthem.com": `{ "maxPublicPosts": 5, "rewardRange": [2, 8] }`,
@@ -53,7 +51,6 @@ function generateNewsHeadlines(day, heat, coins) {
 
 function generateAnonBoard() {
     const threads = [];
-    // Pick 3-5 random conspiracies
     const count = randomInt(3, 5);
     for(let i=0; i<count; i++) {
         const topic = randomChoice(CONSPIRACIES);
@@ -99,6 +96,65 @@ function generateMarketWatch(day) {
     return stocks;
 }
 
+// LifeLog Generator
+function generateLifeLog(citizens) {
+    const profiles = [];
+    const feed = [];
+
+    citizens.forEach(c => {
+        // Create Username
+        const username = (c.name.charAt(0) + c.surname).toLowerCase() + randomInt(1, 99);
+
+        // Assign some posts
+        const posts = [];
+        const postCount = randomInt(1, 4);
+
+        // If criminal, maybe add suspicious post
+        if (c.case_relevance === "main" && Math.random() < 0.4) {
+            posts.push({ text: randomChoice(LIFELOG_SUSPICIOUS), time: "2h ago" });
+        }
+
+        for(let i=0; i<postCount; i++) {
+            posts.push({ text: randomChoice(LIFELOG_POSTS), time: `${randomInt(3, 12)}h ago` });
+        }
+
+        const profile = {
+            id: c.id,
+            name: `${c.name} ${c.surname}`,
+            username: "@" + username,
+            bio: "Just living the dream in Center City.",
+            posts: posts
+        };
+        profiles.push(profile);
+
+        // Add to global feed
+        posts.forEach(p => {
+            feed.push({ username: profile.username, text: p.text, time: p.time, userId: c.id });
+        });
+    });
+
+    // Shuffle feed
+    feed.sort(() => Math.random() - 0.5);
+    return { profiles, feed };
+}
+
+// GovServices Generator
+function generateGovServices(heat) {
+    const finePerHeat = 2; // 2 E€E per 1 Heat point
+    const totalFine = Math.floor(heat * finePerHeat);
+
+    let status = "GOOD_STANDING";
+    if (heat > 20) status = "WATCH_LIST";
+    if (heat > 50) status = "SUSPECT_PROFILE";
+    if (heat > 80) status = "FUGITIVE_WARRANT";
+
+    return {
+        status,
+        fineAmount: totalFine,
+        heat: Math.floor(heat)
+    };
+}
+
 export function generateSiteWorld(day, citizens, worldCase) {
     const sites = {};
 
@@ -106,24 +162,20 @@ export function generateSiteWorld(day, citizens, worldCase) {
     {
         const host = "pleasefindthem.com";
         const posts = [];
-        // Main Case
         if (worldCase && worldCase.targetCitizenId) {
             posts.push({ id: `pft_case_${worldCase.id}`, title: "URGENT: MISSING", author: "User99", citizenId: worldCase.targetCitizenId, reward: 15, content: "Help needed.", isMain: true });
         }
-        // Decoys
         const pool = citizens.filter(c => !worldCase || c.id !== worldCase.targetCitizenId);
         const decoyCount = Math.min(pool.length, 3);
         for (let i = 0; i < decoyCount; i++) {
             const c = pool[i];
             posts.push({ id: `pft_side_${c.id}`, title: `Have you seen ${c.name}?`, author: `User_${randomInt(100,999)}`, citizenId: c.id, reward: randomInt(2, 5), content: "Disappeared recently.", isMain: false });
         }
-        // Flavor Posts (NEW)
         const flavorCount = randomInt(1, 2);
         for(let i=0; i<flavorCount; i++) {
             const f = randomChoice(FLAVOR_POSTS_PFT);
             posts.push({ id: `pft_flavor_${i}`, title: f.title, author: f.author, citizenId: null, reward: 0, content: f.content, isMain: false, isFlavor: true });
         }
-
         sites[host] = { host, day, posts };
     }
 
@@ -155,6 +207,20 @@ export function generateSiteWorld(day, citizens, worldCase) {
         const host = "marketwatch.w3";
         const stocks = generateMarketWatch(day);
         sites[host] = { host, day, stocks };
+    }
+
+    // 6. LifeLog
+    {
+        const host = "lifelog.net";
+        const data = generateLifeLog(citizens);
+        sites[host] = { host, day, profiles: data.profiles, feed: data.feed };
+    }
+
+    // 7. GovServices
+    {
+        const host = "govservices.center";
+        const data = generateGovServices(state.policeHeat);
+        sites[host] = { host, day, status: data.status, fine: data.fineAmount, heat: data.heat };
     }
 
     state.world.sites = sites;

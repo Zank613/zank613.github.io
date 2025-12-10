@@ -34,6 +34,29 @@ export const HAIR_COLOR_POOL = [
     "shaved", "balding", "dreadlocks"
 ];
 
+export const LIFELOG_POSTS = [
+    "Just saw the weirdest drone flying over Sector 7.",
+    "Anyone else's internet slow today? CenterMesh is acting up.",
+    "Finally got that promotion! Drinks on me tonight.",
+    "Lost my keys again. If found please DM.",
+    "The rain in this city never stops.",
+    "Selling old AR goggles, barely used. 50 credits.",
+    "My neighbor is so loud, I swear they are running a server farm.",
+    "Just adopted a robo-dog. He bites.",
+    "Why is coffee so expensive now?",
+    "Feeling watched today. Need a vacation."
+];
+
+export const LIFELOG_SUSPICIOUS = [
+    "Heading out. Don't wait up.",
+    "Finally got the package.",
+    "Delete this after reading.",
+    "They are onto us.",
+    "Big payday coming soon.",
+    "Need a safe place to crash.",
+    "Anyone know a good lawyer?"
+];
+
 // ==========================================
 // PROCEDURAL WEB CONTENT POOLS
 // ==========================================
@@ -234,6 +257,29 @@ export const COMPLAINT_TEMPLATES = [
         title: "Illegal Drone Surveillance",
         base_text: "Subject flying drones into high-rise apartment windows to record footage of residents.",
         evidence_tags: ["tech", "privacy", "video"],
+        default_is_criminal: true,
+        default_threat: "high"
+    },
+    {   id: "grand_theft_auto",
+        category: "theft",
+        title: "Grand Theft Auto",
+        base_text: "High-end vehicle stolen from secure garage. Subject seen bypassing electronic locks.",
+        evidence_tags: ["car", "tech", "money"],
+        default_is_criminal: true,
+        default_threat: "high"
+    },
+    {   id: "arson",
+        category: "property",
+        title: "Arson (Warehouse)",
+        base_text: "Fire started in industrial district. Accelerants found at scene. Subject seen fleeing.",
+        evidence_tags: ["fire", "panic", "night_activity"],
+        default_is_criminal: true, default_threat: "high"
+    },
+    {   id: "kidnapping",
+        category: "personal_safety",
+        title: "Kidnapping",
+        base_text: "Child missing from playground. Witnesses saw a struggle and a van speeding away.",
+        evidence_tags: ["violence", "car", "victim"],
         default_is_criminal: true,
         default_threat: "high"
     }

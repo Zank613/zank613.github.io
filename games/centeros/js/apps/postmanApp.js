@@ -1,40 +1,76 @@
 import { state } from "../state.js";
 import { BaseApp } from "../core/baseApp.js";
+import { fs } from "../os/fileSystem.js";
 
 export class PostmanApp extends BaseApp {
     constructor() {
         super();
         this.selectedEmailId = null;
         this.listRects = [];
+
+        // Interactive state for attachments
+        this.downloadBtnRect = null;
+        this.feedbackMessage = "";
     }
 
     handleClick(globalX, globalY, contentRect) {
         const { x, y } = this.getLocalCoords(globalX, globalY, contentRect);
 
-        // Check Back Button
+        // 1. Detail View Clicks
         if (this.selectedEmailId) {
+            // Back Button
             if (this.isInside(x, y, 10, 10, 60, 24)) {
-                this.selectedEmailId = null; // Go back to inbox
+                this.selectedEmailId = null;
+                this.downloadBtnRect = null;
+                this.feedbackMessage = "";
                 return;
             }
             // Delete Button
             if (this.isInside(x, y, contentRect.width - 80, 10, 70, 24)) {
                 state.emails = state.emails.filter(e => e.id !== this.selectedEmailId);
                 this.selectedEmailId = null;
+                this.downloadBtnRect = null;
+                this.feedbackMessage = "";
+                return;
+            }
+
+            // Download Attachment Button
+            if (this.downloadBtnRect && this.isInside(x, y, this.downloadBtnRect.x, this.downloadBtnRect.y, this.downloadBtnRect.w, this.downloadBtnRect.h)) {
+                this.handleDownload(this.downloadBtnRect.fileId);
                 return;
             }
             return;
         }
 
-        // Check List Items
+        // 2. Inbox List Clicks
         for (const item of this.listRects) {
             if (this.isInside(x, y, item.x, item.y, item.w, item.h)) {
                 this.selectedEmailId = item.id;
+                this.feedbackMessage = ""; // Reset feedback
                 // Mark as read
                 const email = state.emails.find(e => e.id === item.id);
                 if (email) email.read = true;
                 return;
             }
+        }
+    }
+
+    handleDownload(fileId) {
+        // Look for the file in downloads
+        const file = fs.home.downloads.children.find(f => f.id === fileId);
+
+        if (!file) {
+            this.feedbackMessage = "Error: Attachment file not found on disk.";
+            return;
+        }
+
+        if (file.extension === "ces") {
+            file.rename(file.name.replace(".ces", ".cts"));
+            this.feedbackMessage = `Success: ${file.name} decrypted and saved.`;
+        } else if (file.extension === "cts") {
+            this.feedbackMessage = "File is already decrypted.";
+        } else {
+            this.feedbackMessage = "Error: Unknown file format.";
         }
     }
 
@@ -53,7 +89,7 @@ export class PostmanApp extends BaseApp {
         ctx.font = fonts.panel;
         ctx.textAlign = "left";
         ctx.textBaseline = "middle";
-        ctx.fillText("Postman v2.0", 16, 20);
+        ctx.fillText("Postman v2.1", 16, 20);
 
         // Count Unread
         const unread = state.emails.filter(e => !e.read).length;
@@ -153,7 +189,7 @@ export class PostmanApp extends BaseApp {
         y += 30;
         ctx.fillStyle = colors.contentText;
 
-        // Simple Wrap
+        // Simple Wrap for Body Text
         const words = email.body.split(" ");
         let line = "";
         for(let w of words) {
@@ -173,5 +209,45 @@ export class PostmanApp extends BaseApp {
             }
         }
         ctx.fillText(line, 16, y);
+        y += 30;
+
+        // ATTACHMENT DETECTION
+        this.downloadBtnRect = null;
+        // Regex to find "cmd:download_cts:FILEID"
+        const match = email.body.match(/cmd:download_cts:([a-zA-Z0-9_]+)/);
+
+        if (match) {
+            const fileId = match[1];
+
+            // Draw Attachment Divider
+            ctx.fillStyle = "#444";
+            ctx.fillRect(16, y, rect.width - 32, 1);
+            y += 15;
+
+            // Draw Button
+            const btnW = 200;
+            const btnH = 30;
+
+            ctx.fillStyle = "#2d7a3e";
+            ctx.fillRect(16, y, btnW, btnH);
+            ctx.strokeStyle = "#4caf50";
+            ctx.strokeRect(16, y, btnW, btnH);
+
+            ctx.fillStyle = "#fff";
+            ctx.textAlign = "center";
+            ctx.font = "bold 12px system-ui";
+            ctx.fillText("DECRYPT & DOWNLOAD", 16 + btnW/2, y + 15);
+
+            this.downloadBtnRect = { x: 16, y: y, w: btnW, h: btnH, fileId: fileId };
+
+            y += 45;
+        }
+
+        // Render Feedback Message (Success/Error)
+        if (this.feedbackMessage) {
+            ctx.textAlign = "left";
+            ctx.fillStyle = this.feedbackMessage.includes("Error") ? "#ff5555" : "#55ff55";
+            ctx.fillText(this.feedbackMessage, 16, y);
+        }
     }
 }

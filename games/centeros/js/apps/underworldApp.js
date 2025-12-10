@@ -15,7 +15,8 @@ export class UnderworldApp extends BaseApp {
             { id: "vpn2", type: "vpn", tier: 2, label: "VPN 2", desc: "Multi-hop routing.", cost: 5 },
             { id: "vpn3", type: "vpn", tier: 3, label: "VPN 3", desc: "Obfuscated traffic.", cost: 9 },
             { id: "vpn4", type: "vpn", tier: 4, label: "VPN 4", desc: "Max protection.", cost: 14 },
-            { id: "virusExterminator", type: "consumable", label: "VirusExterminator", desc: "Removes visual glitches.", cost: 3 }
+            { id: "virusExterminator", type: "consumable", label: "VirusExterminator", desc: "Removes visual glitches.", cost: 3 },
+            { id: "cescracker", type: "app", label: "CES Cracker", desc: "Decrypts .ces files locally.", cost: 18 },
         ];
         this.message = "";
         this.renderRect = {width: 0};
@@ -41,6 +42,7 @@ export class UnderworldApp extends BaseApp {
         if (item.id === "remote") return !!state.remote?.owned;
         if (item.type === "router") return !!state.router?.owned;
         if (item.type === "vpn") return (state.vpn?.tier || 0) >= item.tier;
+        if (item.id === "cescracker") return !!state.tools?.cesCracker;
         return false;
     }
 
@@ -57,6 +59,7 @@ export class UnderworldApp extends BaseApp {
         else if (item.type === "router") { state.router = state.router || {}; state.router.owned = true; installApp("router"); }
         else if (item.type === "vpn") { state.vpn = state.vpn || { tier: 0 }; state.vpn.tier = Math.max(state.vpn.tier, item.tier); }
         else if (item.id === "virusExterminator") { state.virusTools = state.virusTools || { exterminatorCharges: 0 }; state.virusTools.exterminatorCharges++; }
+        else if (item.id === "cescracker") { state.tools = state.tools || {}; state.tools.cesCracker = true; installApp("cescracker"); }
 
         this.message = `${item.label} purchased.`;
     }

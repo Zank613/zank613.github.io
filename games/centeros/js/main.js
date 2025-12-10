@@ -12,6 +12,7 @@ import { AtmosphereManager } from "./systems/atmosphereManager.js";
 import { themeManager } from "./os/theme.js";
 import { generateSiteWorld } from "./world/siteGenerator.js";
 import { DebugManager } from "./core/debug.js";
+import { fs } from "./os/fileSystem.js";
 
 // Game State
 import { state, TIME_CONFIG } from "./state.js";
@@ -39,6 +40,8 @@ import { SettingsApp } from "./apps/settingsApp.js";
 import { NetToolsApp } from "./apps/netToolsApp.js";
 import { TaskManagerApp } from "./apps/taskManagerApp.js";
 import { PostmanApp } from "./apps/postmanApp.js";
+import { CesCrackerApp } from "./apps/cesCrackerApp.js";
+import { DirectoriesApp } from "./apps/directoriesApp.js";
 
 // ==============================================
 // 1. REGISTER APPS
@@ -144,6 +147,16 @@ appRegistry.register("postman", {
     preferredSize: { width: 500, height: 400 },
     createInstance: () => new PostmanApp()
 });
+appRegistry.register("cescracker", {
+    title: "CES Cracker",
+    preferredSize: { width: 400, height: 300 },
+    createInstance: () => new CesCrackerApp()
+});
+appRegistry.register("files", {
+    title: "File Manager",
+    preferredSize: { width: 500, height: 400 },
+    createInstance: (data) => new DirectoriesApp(data)
+});
 
 // ==============================================
 // 2. ENGINE INITIALIZATION
@@ -158,6 +171,18 @@ const desktop = new Desktop(networkManager, atmosphereManager);
 const traceManager = new TraceManager();
 
 const debugManager = new DebugManager(traceManager);
+
+
+fs.downloads.addFile("legacy_driver.ces", "BINARY_BLOB", "encrypted");
+fs.desktop.addFile("sys_check.ccts", "RUN: SYSTEM_DIAGNOSTIC\nMSG: Running Self Test...", "binary");
+fs.documents.addFile("reminder.txt", "Don't forget to pay the GovServices fine before Tuesday.\nThey threatened to cap my bandwidth again.", "text");
+
+// System Files (The Easter Eggs)
+const kernel = fs.sys.addFile("kernel.ccts", "CENTER_OS_KERNEL_V12.4\n[PROTECTED MEMORY REGION]\nDO NOT MODIFY", "system");
+const drivers = fs.sys.addFolder("drivers");
+drivers.addFile("display.sys", "Display Driver v2.1", "text");
+drivers.addFile("network.sys", "CenterMesh Network Driver", "text");
+fs.sys.addFile("boot.log", "[21:00:01] BOOT_SEQ_INIT... OK\n[21:00:02] CENTER_LINK... ESTABLISHED\n[21:00:03] USER_MONITOR... ACTIVE", "text");
 
 desktop.setWindowManager(wm);
 desktop.setTaskbarPosition("bottom");
@@ -196,6 +221,8 @@ desktop.registerIcon({ id: "virusex",       label: "VirusExterminator", color: "
 desktop.registerIcon({ id: "settings", label: "Settings", color: "#888888" });
 desktop.registerIcon({ id: "taskman", label: "TaskMgr", color: "#55aa55" });
 desktop.registerIcon({ id: "postman", label: "Email", color: "#dd5522" });
+desktop.registerIcon({ id: "files", label: "Files", color: "#f2d024" });
+desktop.registerIcon({ id: "cescracker", label: "CES_Cracker", color: "#005478"});
 
 desktop.setCustomPanelRenderer((ctx, w, h, ph) => {
     const fonts = themeManager.getFonts();
@@ -277,6 +304,25 @@ window.addEventListener("centeros-trigger-trace", (e) => {
 
     if (!traceManager.active) {
         traceManager.triggerTrace(difficulty);
+    }
+});
+
+window.addEventListener("centeros-open-file-picker", (e) => {
+    bus.emit("openApp", {
+        id: "files",
+        data: {
+            mode: "picker",
+            source: e.detail.sourceApp
+        }
+    });
+});
+
+window.addEventListener("centeros-close-window", (e) => {
+    const appId = e.detail.appId;
+    // Find the window with this app ID
+    const win = wm.windows.find(w => w.appId === appId);
+    if (win) {
+        wm.closeWindow(win.id);
     }
 });
 

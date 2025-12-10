@@ -16,36 +16,41 @@ function randomHexAddress(bytes = 6) {
     return out;
 }
 
-const WIFI_NAMES = [
-    "hackers_wifi",
-    "dont_join",
-    "PrettyFlyForAWifi",
-    "FBI_Surveillance_Van",
-    "LAN_of_the_Dead",
-    "CenterOS_Mainframe",
-    "eightcoin_miner_node",
-    "MomLaptop_5G",
-    "404_Network_Not_Found",
-    "CoffeeShop_Guest"
+// Config for network types
+const NETWORK_TYPES = [
+    { name: "CoffeeShop_Guest", baseSpeed: 5, range: 10 },    // Slow (5-15 Mbps)
+    { name: "MomLaptop_5G", baseSpeed: 20, range: 30 },       // Decent (20-50 Mbps)
+    { name: "PrettyFlyForAWifi", baseSpeed: 40, range: 60 },  // Good (40-100 Mbps)
+    { name: "FBI_Surveillance_Van", baseSpeed: 100, range: 200 }, // Fast
+    { name: "CenterOS_Mainframe", baseSpeed: 500, range: 500 },   // Ultra Fast (Fiber)
+    { name: "dont_join", baseSpeed: 1, range: 5 },            // Trash
+    { name: "hackers_wifi", baseSpeed: 50, range: 50 },
+    { name: "404_Network_Not_Found", baseSpeed: 10, range: 20 },
+    { name: "LAN_of_the_Dead", baseSpeed: 15, range: 15 }
 ];
 
 class NetworkManager {
     constructor() {
-        const shuffled = [...WIFI_NAMES].sort(() => Math.random() - 0.5);
-
-        this.networks = shuffled.map((name, index) => {
+        // Generate Networks
+        this.networks = NETWORK_TYPES.map((type, index) => {
             const wpa = 1 + Math.floor(Math.random() * 3); // 1..3
+            // Randomized max capability of this router
+            const maxSpeedMbps = type.baseSpeed + Math.floor(Math.random() * type.range);
+
             return {
                 id: "wifi" + index,
-                ssid: name,
+                ssid: type.name,
                 password: randomPassword(8 + Math.floor(Math.random() * 4)),
-                strength: 1 + Math.floor(Math.random() * 3), // 1..3 bars
+                // Signal strength 1 (Weak) to 3 (Strong)
+                strength: 1 + Math.floor(Math.random() * 3),
                 address: randomHexAddress(6),
-                wpa
+                wpa,
+                maxSpeedMbps, // The theoretical max speed of the router
+                frequency: Math.random() > 0.5 ? "5GHz" : "2.4GHz"
             };
-        });
+        }).sort(() => Math.random() - 0.5);
 
-        // Starting network: WPA1 and already known
+        // Ensure starting network is accessible
         if (this.networks[0]) {
             this.networks[0].wpa = 1;
         }
@@ -61,63 +66,80 @@ class NetworkManager {
 
     injectNetworks(newNetworks) {
         for (const net of newNetworks) {
-            // Avoid duplicates
             if (!this.networks.find(n => n.ssid === net.ssid)) {
-                // Fill in details if missing
                 net.id = "net_" + net.ssid;
                 net.password = net.password || "blue" + Math.floor(Math.random() * 9999);
-                net.address = net.address || "0000AA" + Math.floor(Math.random() * 999999).toString(16).toUpperCase();
-
+                net.address = net.address || randomHexAddress(6);
+                net.maxSpeedMbps = net.maxSpeedMbps || 50;
+                net.frequency = "5GHz";
                 this.networks.push(net);
             }
         }
     }
 
-    toggleMenu() {
-        this.menuOpen = !this.menuOpen;
-    }
+    // --- CONNECTION LOGIC ---
 
-    closeMenu() {
-        this.menuOpen = false;
-    }
-
-    isKnown(id) {
-        return this.known.has(id);
-    }
-
-    markKnown(id) {
-        this.known.add(id);
-    }
-
-    getNetworkById(id) {
-        return this.networks.find(n => n.id === id) || null;
-    }
-
-    getNetworkBySsid(ssid) {
-        const lower = ssid.toLowerCase();
-        return this.networks.find(n => n.ssid.toLowerCase() === lower) || null;
-    }
-
-    getNetworkByAddress(hexCode) {
-        const normalized = hexCode.toUpperCase().replace(/^0X/, "");
-        return this.networks.find(n => n.address === normalized) || null;
-    }
+    isKnown(id) { return this.known.has(id); }
+    markKnown(id) { this.known.add(id); }
+    getNetworkById(id) { return this.networks.find(n => n.id === id) || null; }
+    getNetworkBySsid(ssid) { return this.networks.find(n => n.ssid.toLowerCase() === ssid.toLowerCase()) || null; }
+    getNetworkByAddress(hex) { return this.networks.find(n => n.address === hex.toUpperCase().replace(/^0X/, "")) || null; }
 
     connect(id) {
         const net = this.getNetworkById(id);
         if (!net) return false;
-
-        if (!this.isKnown(id)) {
-            return false;
-        }
-
+        if (!this.isKnown(id)) return false;
         this.connectedId = id;
-        this.menuOpen = false;
         return true;
     }
 
     getConnectedNetwork() {
         return this.getNetworkById(this.connectedId);
+    }
+
+    // --- PHYSICS SIMULATION ---
+
+    /**
+     * Returns the current download speed in Bytes per Second.
+     * Takes signal strength and interference into account.
+     */
+    getCurrentDownloadSpeed() {
+        const net = this.getConnectedNetwork();
+        if (!net) return 0;
+
+        // Signal factor: 1 bar = 10%, 2 bars = 50%, 3 bars = 95-100%
+        let signalFactor = 0.1;
+        if (net.strength === 2) signalFactor = 0.5;
+        if (net.strength === 3) signalFactor = 0.95;
+
+        // Add some random jitter (flux)
+        const jitter = 0.9 + Math.random() * 0.2;
+
+        // Calculate Mbps
+        const effectiveMbps = net.maxSpeedMbps * signalFactor * jitter;
+
+        // Convert to Bytes per Second (1 Byte = 8 bits)
+        // Mbps -> Bytes/s:  (Mbps * 1,000,000) / 8
+        return (effectiveMbps * 1000000) / 8;
+    }
+
+    /**
+     * Formats bytes into readable string
+     */
+    formatBytes(bytes) {
+        if (bytes === 0) return '0 B';
+        const k = 1024;
+        const sizes = ['B', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+    }
+
+    /**
+     * Returns formatted speed string (e.g., "4.5 MB/s")
+     */
+    getFormattedSpeed() {
+        const bps = this.getCurrentDownloadSpeed();
+        return this.formatBytes(bps) + "/s";
     }
 }
 

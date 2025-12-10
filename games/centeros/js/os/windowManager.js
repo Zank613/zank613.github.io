@@ -14,6 +14,7 @@ export class WindowManager {
 
     setWorkArea(rect) {
         this.workArea = rect;
+        this.windows.forEach(w => this.clampWindow(w));
     }
 
     createWindow(appId, title, canvasWidth, canvasHeight, appInstance, appPreferredSize) {
@@ -26,17 +27,16 @@ export class WindowManager {
 
         const w = appPreferredSize?.width || 600;
         const h = appPreferredSize?.height || 400;
-        const x = this.workArea.x + (this.workArea.width - w) / 2 + (this.windows.length * 20);
-        const y = this.workArea.y + (this.workArea.height - h) / 2 + (this.windows.length * 20);
+
+        // Center initial position
+        let x = this.workArea.x + (this.workArea.width - w) / 2 + (this.windows.length * 20);
+        let y = this.workArea.y + (this.workArea.height - h) / 2 + (this.windows.length * 20);
 
         const win = {
             id: this._nextId++,
             appId,
             title,
-            x: Math.max(this.workArea.x, x),
-            y: Math.max(this.workArea.y, y),
-            width: w,
-            height: h,
+            x, y, width: w, height: h,
             isMaximized: false,
             isMinimized: false,
             preMaxRect: null,
@@ -44,8 +44,26 @@ export class WindowManager {
             titleBarHeight: 28
         };
 
+        this.clampWindow(win);
         this.windows.push(win);
         this.focusWindow(win.id);
+    }
+
+    // Helper to keep window inside work area
+    clampWindow(win) {
+        if (win.isMaximized) return;
+
+        // X boundaries
+        if (win.x < this.workArea.x) win.x = this.workArea.x;
+        if (win.x + win.width > this.workArea.x + this.workArea.width) {
+            win.x = this.workArea.x + this.workArea.width - win.width;
+        }
+
+        // Y boundaries
+        if (win.y < this.workArea.y) win.y = this.workArea.y;
+        if (win.y + win.height > this.workArea.y + this.workArea.height) {
+            win.y = this.workArea.y + this.workArea.height - win.height;
+        }
     }
 
     focusWindow(id) {
@@ -192,6 +210,8 @@ export class WindowManager {
             if (ds.type === 'move') {
                 win.x = ds.initialRect.x + (x - ds.startX);
                 win.y = ds.initialRect.y + (y - ds.startY);
+                this.clampWindow(win);
+
             } else if (ds.type === 'resize') {
                 const dx = x - ds.startX;
                 const dy = y - ds.startY;
@@ -336,7 +356,6 @@ export class WindowManager {
         const minCX = win.x + win.width - 62;
 
         if (style === 'centeros') {
-            // Original: Colored Circles
             const drawBtn = (x, color) => {
                 ctx.fillStyle = color;
                 ctx.beginPath(); ctx.arc(x, centerY, 6, 0, Math.PI * 2); ctx.fill();
@@ -346,7 +365,6 @@ export class WindowManager {
             drawBtn(minCX, colors.buttonMin);
         }
         else if (style === 'classic') {
-            // Classic: Windows-like symbols (□ ✕)
             ctx.font = "bold 14px monospace";
             ctx.textAlign = "center";
             ctx.textBaseline = "middle";
@@ -358,19 +376,16 @@ export class WindowManager {
             ctx.fillText("─", minCX, centerY - 2);
         }
         else if (style === 'retro') {
-            // Retro: Pixelated boxes
             ctx.font = "12px monospace";
             ctx.textAlign = "center";
             ctx.textBaseline = "middle";
             const btnSize = 16;
 
             const drawPixelBtn = (text, x) => {
-                ctx.fillStyle = colors.windowBorder; // Dark border
+                ctx.fillStyle = colors.windowBorder;
                 ctx.fillRect(x - btnSize/2, centerY - btnSize/2, btnSize, btnSize);
-
-                ctx.fillStyle = colors.windowBg; // Inner fill
+                ctx.fillStyle = colors.windowBg;
                 ctx.fillRect(x - btnSize/2 + 1, centerY - btnSize/2 + 1, btnSize - 2, btnSize - 2);
-
                 ctx.fillStyle = colors.titleText;
                 ctx.fillText(text, x, centerY + 1);
             };

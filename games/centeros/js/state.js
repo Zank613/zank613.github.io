@@ -15,6 +15,10 @@ export const state = {
         wp3: false
     },
 
+    tools: {
+        cesCracker: false
+    },
+
     // police heat 0..100
     policeHeat: 0,
 
@@ -112,6 +116,7 @@ export const state = {
         "virusex",         // VirusExterminator
         "taskman",
         "postman",
+        "files",
     ],
 
     reputation: {

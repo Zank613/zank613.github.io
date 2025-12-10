@@ -5,6 +5,12 @@ export class NetToolsApp extends BaseApp {
     constructor() {
         super();
         this.itemsRects = [];
+        this.timer = 0;
+    }
+
+    update(dt) {
+        this.timer += dt;
+        if(this.timer > 1.0) this.timer = 0;
     }
 
     handleClick(globalX, globalY, contentRect) {
@@ -36,7 +42,7 @@ export class NetToolsApp extends BaseApp {
         this.itemsRects = [];
 
         let y = 48;
-        const rowH = 36;
+        const rowH = 46;
 
         for (const net of networks) {
             const isConnected = current && current.id === net.id;
@@ -51,24 +57,31 @@ export class NetToolsApp extends BaseApp {
                 ctx.fillRect(rect.x + 8, rect.y + y, rect.width - 16, rowH);
             }
 
-            // SSID
+            // SSID & Frequency
             ctx.fillStyle = isConnected ? "#88ff88" : (isKnown ? colors.contentText : "#777");
             ctx.font = fonts.ui;
-            ctx.fillText(net.ssid, rect.x + 16, rect.y + y + 14);
+            const freqText = net.frequency ? `[${net.frequency}]` : "";
+            ctx.fillText(`${net.ssid} ${freqText}`, rect.x + 16, rect.y + y + 14);
 
             // Status Text
             ctx.font = "11px system-ui";
             let status = "Locked";
-            if (isConnected) status = "Connected";
-            else if (isKnown) status = "Click to Connect";
+            if (isConnected) {
+                const signal = net.strength === 3 ? "Excellent" : (net.strength === 2 ? "Good" : "Weak");
+                status = `Connected | Signal: ${signal}`;
+            }
+            else if (isKnown) {
+                const max = net.maxSpeedMbps ? `Max: ${net.maxSpeedMbps}Mbps` : "";
+                status = `Click to Connect | ${max}`;
+            }
 
             ctx.fillStyle = isConnected ? "#88ff88" : (isKnown ? "#aaaaaa" : "#555");
-            ctx.fillText(status, rect.x + 16, rect.y + y + 28);
+            ctx.fillText(status, rect.x + 16, rect.y + y + 30);
 
             // Signal Bars
             ctx.fillStyle = isKnown ? colors.highlight : "#555";
             for(let i=0; i<net.strength; i++) {
-                ctx.fillRect(rect.x + rect.width - 40 + (i*6), rect.y + y + 10 + (2-i)*4, 4, 14 - (2-i)*4);
+                ctx.fillRect(rect.x + rect.width - 40 + (i*6), rect.y + y + 15 + (2-i)*4, 4, 14 - (2-i)*4);
             }
 
             // Save click region
