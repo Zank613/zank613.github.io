@@ -1,6 +1,9 @@
 import { BaseApp } from "../core/baseApp.js";
 import { fs } from "../os/fileSystem.js";
 import { ScriptSystem } from "../systems/scriptSystem.js";
+import { appRegistry } from "../os/appRegistry.js";
+import {isAppInstalled} from "../state.js";
+import { contextMenuManager } from "../os/contextMenuManager.js";
 
 export class DirectoriesApp extends BaseApp {
     constructor(data) {
@@ -37,7 +40,6 @@ export class DirectoriesApp extends BaseApp {
     }
 
     handleFilePick(file) {
-        // Dispatch event with the file ID
         const event = new CustomEvent("centeros-file-picked", {
             detail: {
                 fileId: file.id,
@@ -51,34 +53,114 @@ export class DirectoriesApp extends BaseApp {
         }
     }
 
-    handleFileLaunch(file) {
-        if (file.name === "kernel.ccts") {
-            const event = new CustomEvent("force-open-app", {
-                detail: { id: "notepad", data: { content: `[SYSTEM CRITICAL ALERT]\n\nUNAUTHORIZED ACCESS ATTEMPT.\nTARGET: KERNEL MEMORY` } }
-            });
-            window.dispatchEvent(event);
-            return;
+    handleRightClick(globalX, globalY, localX, localY) {
+        // Check if we clicked a file
+        for (const rect of this.itemsRects) {
+            if (this.isInside(localX, localY, rect.x, rect.y, rect.w, rect.h)) {
+                const file = rect.item;
+
+                // Define Actions
+                const actions = [
+                    {
+                        label: `Open "${file.name}"`,
+                        action: () => this.openItem(file)
+                    },
+                    {
+                        label: "Inspect Hex",
+                        action: () => this.openHexDump(file)
+                    },
+                    {
+                        label: "Decrypt",
+                        condition: (file.extension === "ces" && isAppInstalled("cescracker")),
+                        action: () => this.launchDecrypt(file)
+                    },
+                    {
+                        label: "Delete",
+                        action: () => this.deleteFile(file)
+                    }
+                ];
+
+                contextMenuManager.open(globalX, globalY, actions);
+                return true;
+            }
         }
 
-        if (file.extension === "ces") {
-            window.dispatchEvent(new CustomEvent("force-open-app", {
-                detail: { id: "notepad", data: { content: `[SYSTEM LOCK]\n\nFile is encrypted.` } }
-            }));
-            return;
-        }
+        // If clicked empty space
+        contextMenuManager.open(globalX, globalY, [
+            { label: "Refresh", action: () => {  } },
+            { label: "New Folder", action: () => this.createFolder() }
+        ]);
 
-        if (file.extension === "cts" || file.extension === "ccts") {
-            const result = ScriptSystem.execute(file);
-            const header = `=== EXECUTION LOG: ${file.name} ===\n\n`;
-            window.dispatchEvent(new CustomEvent("force-open-app", {
-                detail: { id: "notepad", data: { content: header + result.message } }
-            }));
-            return;
+        return true;
+    }
+
+    openHexDump(file) {
+        // Convert string/binary content to fake HEX representation
+        let hex = "";
+        const source = file.content;
+        for(let i=0; i<Math.min(source.length, 200); i++) {
+            hex += source.charCodeAt(i).toString(16).toUpperCase().padStart(2, '0') + " ";
+            if((i+1) % 8 === 0) hex += " ";
+            if((i+1) % 16 === 0) hex += "\n";
         }
+        if (source.length > 200) hex += "\n... [EOF]";
+
+        const header = `HEX DUMP: ${file.name} (${file.size} bytes)\n------------------------------------------------\n`;
 
         window.dispatchEvent(new CustomEvent("force-open-app", {
-            detail: { id: "notepad", data: { content: file.content } }
+            detail: { id: "notepad", data: { content: header + hex } }
         }));
+    }
+
+    launchDecrypt(file) {
+        window.dispatchEvent(new CustomEvent("force-open-app", {
+            detail: {
+                id: "cescracker",
+                data: { content: null }
+            }
+        }));
+    }
+
+    deleteFile(file) {
+        if (this.currentFolder) {
+            this.currentFolder.deleteChild(file.id);
+        }
+    }
+
+    createFolder() {
+        if (this.currentFolder) {
+            this.currentFolder.addFolder("New_Folder");
+        }
+    }
+
+    handleFileLaunch(file) {
+        console.log(`[DirectoriesApp] Launching ${file.name} (${file.extension})`);
+
+        // 1. DYNAMIC REGISTRY LOOKUP
+        const assignedAppId = appRegistry.getAppIdForExtension(file.extension);
+
+        if (assignedAppId && isAppInstalled(assignedAppId)) {
+            // Found a registered app
+            window.dispatchEvent(new CustomEvent("force-open-app", {
+                detail: {
+                    id: assignedAppId,
+                    data: {
+                        content: file.content,
+                        fileId: file.id,
+                        // FIXED: Changed 'currentDir' to 'currentFolder'
+                        filePath: this.currentFolder.getPath() + "/" + file.name
+                    }
+                }
+            }));
+        } else {
+            // 2. FALLBACK
+            window.dispatchEvent(new CustomEvent("force-open-app", {
+                detail: {
+                    id: "notepad",
+                    data: { content: file.content }
+                }
+            }));
+        }
     }
 
     handleClick(globalX, globalY, contentRect) {
@@ -95,7 +177,7 @@ export class DirectoriesApp extends BaseApp {
         for (const rect of this.itemsRects) {
             if (this.isInside(x, y, rect.x, rect.y, rect.w, rect.h)) {
                 if (this.selectedItemId === rect.item.id) {
-                    this.openItem(rect.item); // Double click
+                    this.openItem(rect.item); // Double click trigger
                 } else {
                     this.selectedItemId = rect.item.id;
                 }

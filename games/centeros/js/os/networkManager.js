@@ -1,3 +1,5 @@
+import {fs} from "./fileSystem.js";
+
 function randomPassword(length = 10) {
     const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
     let pw = "";
@@ -77,6 +79,12 @@ class NetworkManager {
         }
     }
 
+    // Helper to check driver
+    hasDriver() {
+        const drivers = fs.sys.find("drivers");
+        return drivers && drivers.find("network.sys");
+    }
+
     // --- CONNECTION LOGIC ---
 
     isKnown(id) { return this.known.has(id); }
@@ -86,6 +94,7 @@ class NetworkManager {
     getNetworkByAddress(hex) { return this.networks.find(n => n.address === hex.toUpperCase().replace(/^0X/, "")) || null; }
 
     connect(id) {
+        if (!this.hasDriver()) return false;
         const net = this.getNetworkById(id);
         if (!net) return false;
         if (!this.isKnown(id)) return false;
@@ -94,6 +103,7 @@ class NetworkManager {
     }
 
     getConnectedNetwork() {
+        if (!this.hasDriver()) return null; // Hardware failure simulation
         return this.getNetworkById(this.connectedId);
     }
 

@@ -1,13 +1,17 @@
 import { BaseApp } from "../core/baseApp.js";
 import { themeManager, THEMES } from "../os/theme.js";
+import { audioManager } from "../os/audioManager.js";
 
 export class SettingsApp extends BaseApp {
     constructor() {
         super();
-        this.tabs = ["Appearance", "Taskbar", "System Info"];
+        this.tabs = ["Appearance", "Taskbar", "Audio", "System Info"];
         this.activeTab = "Appearance";
         this.tabsRects = [];
         this.radioButtons = [];
+
+        // Slider Hit Region
+        this.sliderRect = null;
     }
 
     handleClick(globalX, globalY, contentRect) {
@@ -34,6 +38,25 @@ export class SettingsApp extends BaseApp {
                 return;
             }
         }
+
+        // 3. Audio Slider Click
+        if (this.activeTab === "Audio" && this.sliderRect) {
+            const s = this.sliderRect;
+            if (this.isInside(x, y, s.x - 10, s.y - 10, s.w + 20, s.h + 20)) { // Padding for easier clicking
+                // Calculate percentage
+                let pct = (x - s.x) / s.w;
+                pct = Math.max(0, Math.min(1, pct));
+
+                audioManager.setMasterVolume(pct);
+
+                // Play a test sound to indicate volume level
+                if (!audioManager.debounce) {
+                    audioManager.playClick();
+                    audioManager.debounce = true;
+                    setTimeout(() => audioManager.debounce = false, 200);
+                }
+            }
+        }
     }
 
     render(ctx, rect) {
@@ -43,6 +66,7 @@ export class SettingsApp extends BaseApp {
 
         this.tabsRects = [];
         this.radioButtons = [];
+        this.sliderRect = null;
 
         ctx.save();
         ctx.translate(rect.x, rect.y);
@@ -93,11 +117,68 @@ export class SettingsApp extends BaseApp {
             this.renderAppearanceTab(ctx, contentX, colors, fonts, sidebarW);
         } else if (this.activeTab === "Taskbar") {
             this.renderTaskbarTab(ctx, contentX, colors, fonts, sidebarW);
+        } else if (this.activeTab === "Audio") {
+            this.renderAudioTab(ctx, contentX, colors, fonts);
         } else if (this.activeTab === "System Info") {
             this.renderSystemInfoTab(ctx, contentX, colors, fonts);
         }
 
         ctx.restore();
+    }
+
+    // Audio Tab Render
+    renderAudioTab(ctx, startX, colors, fonts) {
+        let y = 30;
+        const x = startX + 30;
+
+        ctx.fillStyle = colors.titleText;
+        ctx.font = fonts.title;
+        ctx.textAlign = "left";
+        ctx.textBaseline = "top";
+        ctx.fillText("System Volume", x, y);
+        y += 40;
+
+        // Slider Track
+        const sliderW = 250;
+        const sliderH = 6;
+        const currentVol = audioManager.getVolume(); // 0.0 to 1.0
+
+        ctx.fillStyle = "#333";
+        ctx.beginPath();
+        ctx.roundRect(x, y, sliderW, sliderH, 3);
+        ctx.fill();
+
+        // Active Bar
+        ctx.fillStyle = colors.highlight;
+        ctx.beginPath();
+        ctx.roundRect(x, y, sliderW * currentVol, sliderH, 3);
+        ctx.fill();
+
+        // Handle (Circle)
+        const handleX = x + (sliderW * currentVol);
+        const handleY = y + sliderH/2;
+
+        ctx.fillStyle = "#fff";
+        ctx.beginPath();
+        ctx.arc(handleX, handleY, 8, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = "#000";
+        ctx.lineWidth = 1;
+        ctx.stroke();
+
+        // Percentage Text
+        ctx.fillStyle = colors.contentText;
+        ctx.font = fonts.ui;
+        ctx.textAlign = "left";
+        const pct = Math.round(currentVol * 100);
+        ctx.fillText(`${pct}%`, x + sliderW + 20, y - 4);
+
+        this.sliderRect = { x: 140 + 30, y: y, w: sliderW, h: sliderH };
+
+        y += 40;
+        ctx.fillStyle = "#888";
+        ctx.font = "11px system-ui";
+        ctx.fillText("Output Device: CenterAudio Virtual Output", x, y);
     }
 
     renderAppearanceTab(ctx, startX, colors, fonts, offsetX) {

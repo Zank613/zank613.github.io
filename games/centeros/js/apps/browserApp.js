@@ -846,6 +846,19 @@ export class BrowserApp extends BaseApp {
         }
     }
 
+    onCopy() {
+        return this.activeTab.url;
+    }
+
+    onPaste(text) {
+        if (this.addressFocused) {
+            this.addressBuffer += text;
+        } else {
+            this.addressFocused = true;
+            this.addressBuffer = text;
+        }
+    }
+
     handleCommandLink(cmdString) {
         const parts = cmdString.split(":");
         const command = parts[1];

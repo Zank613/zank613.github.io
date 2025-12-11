@@ -55,7 +55,7 @@ export class UnderworldApp extends BaseApp {
         state.eightcoin -= finalCost;
         if (item.type === "lib") { state.libs = state.libs || {}; state.libs[item.id] = true; }
         else if (item.id === "eightminer") { state.miner = state.miner || {}; state.miner.owned = true; installApp("miner"); }
-        else if (item.id === "remote") { state.remote = state.remote || {}; state.remote.owned = true; installApp("remote"); }
+        else if (item.id === "remote") { state.remote = state.remote || {}; state.remote.owned = true; }
         else if (item.type === "router") { state.router = state.router || {}; state.router.owned = true; installApp("router"); }
         else if (item.type === "vpn") { state.vpn = state.vpn || { tier: 0 }; state.vpn.tier = Math.max(state.vpn.tier, item.tier); }
         else if (item.id === "virusExterminator") { state.virusTools = state.virusTools || { exterminatorCharges: 0 }; state.virusTools.exterminatorCharges++; }

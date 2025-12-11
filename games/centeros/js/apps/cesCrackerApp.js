@@ -14,8 +14,8 @@ export class CesCrackerApp extends BaseApp {
     }
 
     refreshFiles() {
-        // Find all .ces files in Downloads
-        const all = fs.home.downloads.children;
+        const all = fs.downloads.children;
+
         this.files = all.filter(f => f.extension === "ces");
     }
 

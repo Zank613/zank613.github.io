@@ -11,6 +11,18 @@ export class BaseApp {
         this.windowManager = wm;
     }
 
+
+    // Default Copy behavior: Return null (nothing to copy)
+    onCopy() {
+        return null;
+    }
+
+
+    // Default Paste behavior: Do nothing
+    onPaste(text) {
+
+    }
+
     update(dt) {}
 
     render(ctx, rect) {

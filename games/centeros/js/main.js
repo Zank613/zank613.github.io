@@ -13,9 +13,14 @@ import { themeManager } from "./os/theme.js";
 import { generateSiteWorld } from "./world/siteGenerator.js";
 import { DebugManager } from "./core/debug.js";
 import { fs } from "./os/fileSystem.js";
+import { BootScreen } from "./os/bootScreen.js";
+import { notificationManager } from "./os/notificationManager.js";
+import { contextMenuManager } from "./os/contextMenuManager.js";
+import { startMenu } from "./os/startMenu.js";
+import { audioManager } from "./os/audioManager.js";
 
 // Game State
-import { state, TIME_CONFIG } from "./state.js";
+import { state, TIME_CONFIG, isAppInstalled } from "./state.js";
 import { generateTonightWorld, evaluateCaseVerdict, getOfficerById } from "./world/caseWorld.js";
 import { generateDailyEmails, onJobAccepted } from "./world/emailGenerator.js";
 
@@ -42,6 +47,7 @@ import { TaskManagerApp } from "./apps/taskManagerApp.js";
 import { PostmanApp } from "./apps/postmanApp.js";
 import { CesCrackerApp } from "./apps/cesCrackerApp.js";
 import { DirectoriesApp } from "./apps/directoriesApp.js";
+import { OneTerminal } from "./apps/oneTerminal.js";
 
 // ==============================================
 // 1. REGISTER APPS
@@ -77,6 +83,7 @@ appRegistry.register("sim", {
     preferredSize: { width: 600, height: 360 },
     createInstance: (data) => new SimDbApp(data)
 });
+/*
 appRegistry.register("tel", {
     title: "TelScanner",
     preferredSize: { width: 700, height: 440 },
@@ -87,21 +94,25 @@ appRegistry.register("nethacker", {
     preferredSize: { width: 640, height: 380 },
     createInstance: (data) => new NetHackerApp(data)
 });
+ */
 appRegistry.register("notepad", {
     title: "Notepad",
     preferredSize: { width: 480, height: 320 },
-    createInstance: (data) => new NotepadApp(data)
+    createInstance: (data) => new NotepadApp(data),
+    fileExtensions: ["txt", "log", "md", "js", "json", "sys", "html"]
 });
 appRegistry.register("miner", {
     title: "Eightminer",
     preferredSize: { width: 520, height: 340 },
     createInstance: (data) => new EightminerApp(data)
 });
+/*
 appRegistry.register("remote", {
     title: "RemoteAccesser",
     preferredSize: { width: 520, height: 340 },
     createInstance: (data) => new RemoteAccesserApp(data)
 });
+ */
 appRegistry.register("shop", {
     title: "Underworld Market",
     preferredSize: { width: 620, height: 680 },
@@ -150,12 +161,19 @@ appRegistry.register("postman", {
 appRegistry.register("cescracker", {
     title: "CES Cracker",
     preferredSize: { width: 400, height: 300 },
-    createInstance: () => new CesCrackerApp()
+    createInstance: () => new CesCrackerApp(),
+    fileExtensions: ["ces"]
 });
 appRegistry.register("files", {
     title: "File Manager",
     preferredSize: { width: 500, height: 400 },
     createInstance: (data) => new DirectoriesApp(data)
+});
+appRegistry.register("terminal", {
+    title: "OneTerminal",
+    preferredSize: { width: 680, height: 450 },
+    createInstance: () => new OneTerminal(),
+    fileExtensions: ["cts", "ccts"]
 });
 
 // ==============================================
@@ -172,6 +190,8 @@ const traceManager = new TraceManager();
 
 const debugManager = new DebugManager(traceManager);
 
+const bootScreen = new BootScreen();
+
 
 fs.downloads.addFile("legacy_driver.ces", "BINARY_BLOB", "encrypted");
 fs.desktop.addFile("sys_check.ccts", "RUN: SYSTEM_DIAGNOSTIC\nMSG: Running Self Test...", "binary");
@@ -182,6 +202,7 @@ const kernel = fs.sys.addFile("kernel.ccts", "CENTER_OS_KERNEL_V12.4\n[PROTECTED
 const drivers = fs.sys.addFolder("drivers");
 drivers.addFile("display.sys", "Display Driver v2.1", "text");
 drivers.addFile("network.sys", "CenterMesh Network Driver", "text");
+drivers.addFile("centeraudio.sys", "CenterAudio Logic Driver v9.2\n[DIGITAL SIGNATURE VALID]", "system");
 fs.sys.addFile("boot.log", "[21:00:01] BOOT_SEQ_INIT... OK\n[21:00:02] CENTER_LINK... ESTABLISHED\n[21:00:03] USER_MONITOR... ACTIVE", "text");
 
 desktop.setWindowManager(wm);
@@ -198,6 +219,10 @@ window.addEventListener("centeros-settings-change", (e) => {
     }
 });
 
+window.addEventListener("click", () => {
+    audioManager.init();
+}, { once: true });
+
 // ==============================================
 // 3. GAME CONFIGURATION (Icons & UI)
 // ==============================================
@@ -207,11 +232,11 @@ desktop.registerIcon({ id: "citizen",   label: "Citizen_DB",      color: "#66d9e
 desktop.registerIcon({ id: "id",        label: "ID_DB",           color: "#ffb347" });
 desktop.registerIcon({ id: "police",    label: "Police_DB",       color: "#ff6666" });
 desktop.registerIcon({ id: "sim",       label: "Sim_DB",          color: "#88ff88" });
-desktop.registerIcon({ id: "tel",       label: "TelScan",         color: "#ccaaff" });
-desktop.registerIcon({ id: "nethacker", label: "NetHacker",       color: "#ffcc00" });
+// desktop.registerIcon({ id: "tel",       label: "TelScan",         color: "#ccaaff" });
+// desktop.registerIcon({ id: "nethacker", label: "NetHacker",       color: "#ffcc00" });
 desktop.registerIcon({ id: "notepad",   label: "Notes",           color: "#8888ff" });
 desktop.registerIcon({ id: "miner",     label: "Miner",           color: "#ff8800" });
-desktop.registerIcon({ id: "remote",    label: "Remote",          color: "#66ff99" });
+// desktop.registerIcon({ id: "remote",    label: "Remote",          color: "#66ff99" });
 desktop.registerIcon({ id: "shop",      label: "Shop",            color: "#ff7043" });
 desktop.registerIcon({ id: "net",       label: "Net",             color: "#4caf50" });
 desktop.registerIcon({ id: "duty",          label: "DutyBoard",       color: "#999999" });
@@ -223,6 +248,7 @@ desktop.registerIcon({ id: "taskman", label: "TaskMgr", color: "#55aa55" });
 desktop.registerIcon({ id: "postman", label: "Email", color: "#dd5522" });
 desktop.registerIcon({ id: "files", label: "Files", color: "#f2d024" });
 desktop.registerIcon({ id: "cescracker", label: "CES_Cracker", color: "#005478"});
+desktop.registerIcon({ id: "terminal", label: "Terminal", color: "#333333" });
 
 desktop.setCustomPanelRenderer((ctx, w, h, ph) => {
     const fonts = themeManager.getFonts();
@@ -381,18 +407,68 @@ function applyStressGlitch(x, y) {
 }
 
 canvas.addEventListener("mousedown", (e) => {
+    if (e.button !== 0) return;
+
     const rect = canvas.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
 
+    // Context Menu Priority
+    if (contextMenuManager.activeMenu) {
+        contextMenuManager.handleClick(x, y);
+        return;
+    }
+
+    // NOTIFICATION PANEL INTERACTION
+    if (notificationManager.isPanelOpen) {
+        const panelX = canvas.width - notificationManager.panelWidth;
+        if (x >= panelX) {
+            // Check for DND Button
+            const btnY = canvas.height - 120;
+            if (x >= panelX + 20 && x <= panelX + 150 && y >= btnY && y <= btnY + 60) {
+                notificationManager.toggleDnd();
+                return;
+            }
+            return;
+        } else {
+            notificationManager.togglePanel();
+            return;
+        }
+    }
+
+    if (startMenu.isOpen) {
+        if (startMenu.handleClick(x, y)) {
+            return; // Click handled by menu
+        } else {
+
+        }
+    }
+
     // 1. Trace Check
     if (traceManager.handleClick(x, y)) return;
 
-    // 2. Window Manager (Resize/Drag/Focus)
+    // 2. Window Manager
     if (wm.pointerDown(x, y)) return;
 
     // 3. Desktop/Taskbar Check
     if (desktop.handleClick(x, y)) return;
+});
+
+canvas.addEventListener("contextmenu", (e) => {
+    e.preventDefault();
+
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    // Close existing menu if open
+    if (contextMenuManager.activeMenu) {
+        contextMenuManager.close();
+    }
+
+    if (wm.handleRightClick(x, y)) return;
+
+    if (desktop.handleRightClick(x, y)) return;
 });
 
 canvas.addEventListener("mousemove", (e) => {
@@ -408,11 +484,24 @@ canvas.addEventListener("mouseup", () => {
 });
 
 window.addEventListener("keydown", (e) => {
+
+    audioManager.playKeystroke();
+
+    if (state.boot.phase !== "DESKTOP") {
+        bootScreen.handleKey(e);
+        return; // Don't let keys affect desktop
+    }
     wm.handleKey(e);
 });
 
 canvas.addEventListener("wheel", (e) => {
     e.preventDefault(); // Prevent browser page scrolling
+
+    if (startMenu.isOpen) {
+        startMenu.handleWheel(e.deltaY);
+        return; // Stop here, don't scroll windows behind it
+    }
+
     wm.handleWheel(e);
 }, { passive: false });
 
@@ -517,6 +606,23 @@ setupSiteGeneration();
 
 function update(dt) {
     if (!state.gameOver) {
+
+        // Boot state logic
+        if (state.boot.phase !== "DESKTOP") {
+            bootScreen.update(dt);
+            return; // Don't run game logic yet
+        }
+
+        notificationManager.update(dt);
+
+        // If the kernel file is missing, the system dies immediately.
+        if (!fs.sys.find("kernel.ccts")) {
+            state.systemCrash = "BSOD";
+            return; // Stop all other updates
+        }
+
+        if (state.systemCrash) return;
+
         advanceTimeAndEconomy(dt);
         atmosphereManager.update(dt);
         traceManager.update(dt);
@@ -525,6 +631,12 @@ function update(dt) {
 }
 
 function render() {
+    // Render Boot Screen
+    if (state.boot.phase !== "DESKTOP") {
+        bootScreen.render(ctx, canvas.width, canvas.height);
+        return; // Stop here
+    }
+
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     ctx.save();
@@ -533,13 +645,28 @@ function render() {
     const activeWin = wm.windows.find(w => w.id === wm.activeWindowId);
     const activeTitle = activeWin ? activeWin.title : null;
 
+    // 1. Draw Desktop
     desktop.render(ctx, canvas.width, canvas.height, activeTitle);
 
-    wm.render(ctx);
+    // 2. CHECK: Only draw windows if display.sys exists
+    // If the file is gone, the windows should vanish into the void.
+    const drivers = fs.sys.find("drivers");
+    const hasDisplay = drivers && drivers.find("display.sys");
+
+    if (hasDisplay) {
+        wm.render(ctx);
+    }
+
     ctx.restore();
 
     atmosphereManager.renderOverlay(ctx, canvas.width, canvas.height);
     traceManager.render(ctx, canvas.width, canvas.height);
+
+    startMenu.render(ctx, canvas.width, canvas.height);
+
+    notificationManager.render(ctx, canvas.width, canvas.height);
+
+    contextMenuManager.render(ctx);
 
     if (state.gameOver) {
         ctx.fillStyle = "rgba(0, 0, 0, 0.85)";
@@ -548,6 +675,20 @@ function render() {
         ctx.textAlign = "center";
         ctx.font = "32px system-ui";
         ctx.fillText("POLICE CAPTURED YOU", canvas.width/2, canvas.height/2);
+    }
+
+    if (state.systemCrash === "BSOD") {
+        ctx.fillStyle = "#0000aa"; // Classic Blue
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "20px monospace";
+        ctx.textAlign = "left";
+        ctx.fillText("A problem has been detected and CenterOS has been shut down.", 50, 100);
+        ctx.fillText("CRITICAL_PROCESS_DIED", 50, 140);
+        ctx.fillText("STOP: 0x0000DEAD (0x00, 0x00, 0x00, 0x00)", 50, 180);
+        ctx.fillText("MISSING_KERNEL_SIGNATURE", 50, 210);
+        return;
     }
 }
 

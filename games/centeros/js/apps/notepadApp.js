@@ -25,6 +25,14 @@ export class NotepadApp extends BaseApp {
         }
     }
 
+    onCopy() {
+        return this.text;
+    }
+
+    onPaste(text) {
+        this.text += text;
+    }
+
     render(ctx, rect) {
         const colors = this.getColors();
         const fonts = this.getFonts();

@@ -1,6 +1,10 @@
 import { themeManager } from "./theme.js";
 import { isAppInstalled } from "../state.js";
 import { fs } from "./fileSystem.js";
+import { notificationManager } from "./notificationManager.js";
+import { contextMenuManager } from "./contextMenuManager.js";
+import { startMenu } from "./startMenu.js";
+import { audioManager } from "./audioManager.js";
 
 export class Desktop {
     constructor(networkManager, atmosphereManager) {
@@ -103,7 +107,72 @@ export class Desktop {
         });
     }
 
+    handleRightClick(x, y) {
+
+        audioManager.playClick();
+
+        // 1. Check Icons
+        for (const icon of this.desktopIcons) {
+            const r = 48; // icon size
+            if (x >= icon.x && x <= icon.x + r && y >= icon.y && y <= icon.y + r) {
+
+                const actions = [
+                    { label: "Open", action: () => this.handleIconClick(icon) }
+                ];
+
+                if (icon.type === 'file') {
+                    actions.push({
+                        label: "Delete",
+                        action: () => {
+                            fs.desktop.deleteChild(icon.fileRef.id);
+                            this.refreshIconPositions();
+                        }
+                    });
+                } else if (icon.type === 'app') {
+                    actions.push({
+                        label: "Uninstall",
+                        condition: (icon.id !== "settings"),
+                        action: () => {
+                            // TODO: Logic to remove from state.installedApps
+                            console.log("Uninstalling " + icon.label);
+                        }
+                    });
+                }
+
+                contextMenuManager.open(x, y, actions);
+                return true;
+            }
+        }
+
+        // 2. Wallpaper Click
+        contextMenuManager.open(x, y, [
+            { label: "Refresh Desktop", action: () => this.refreshIconPositions() },
+            { label: "Personalize", action: () => {
+                    const event = new CustomEvent("force-open-app", { detail: { id: "settings" } });
+                    window.dispatchEvent(event);
+                }},
+            { label: "Taskbar Settings", action: () => { /* Switch top/bottom */ } }
+        ]);
+        return true;
+    }
+
+    // Helper to reuse click logic
+    handleIconClick(icon) {
+
+        audioManager.playClick();
+
+        if (icon.type === 'app') {
+            const event = new CustomEvent("force-open-app", { detail: { id: icon.id } });
+            window.dispatchEvent(event);
+        } else {
+            this.handleFileOpen(icon.fileRef);
+        }
+    }
+
     handleClick(x, y) {
+
+        audioManager.playClick();
+
         const tr = this.taskbarRect;
         if (x >= tr.x && x <= tr.x + tr.w && y >= tr.y && y <= tr.y + tr.h) {
             this.handleTaskbarClick(x, y);
@@ -126,24 +195,35 @@ export class Desktop {
     }
 
     handleTaskbarClick(x, y) {
+        const tr = this.taskbarRect;
         const isHorizontal = (this.taskbarPosition === 'top' || this.taskbarPosition === 'bottom');
         const startBtnSize = 40;
 
         // Start Menu (Left/Top)
-        const isStart = isHorizontal ? (x < this.taskbarRect.x + startBtnSize) : (y < this.taskbarRect.y + startBtnSize);
+        const isStart = isHorizontal ? (x < tr.x + startBtnSize) : (y < tr.y + startBtnSize);
         if (isStart) {
-            console.log("Start Menu Clicked (ToDo)");
+            startMenu.toggle();
             return;
         }
 
         if (isHorizontal) {
-            const wifiX = this.taskbarRect.w - 85;
-            if (x >= wifiX - 15 && x <= wifiX + 15) {
+            const rightEdge = tr.x + tr.w;
+
+            if (x >= rightEdge - 50 && x <= rightEdge) {
+                console.log("Bell clicked!"); // Debug to prove it hits
+                notificationManager.togglePanel();
+                return;
+            }
+
+            // 2. WiFi Click
+            const wifiX = rightEdge - 85;
+            if (x >= wifiX - 20 && x <= wifiX + 20) {
                 this.openApp("net");
                 return;
             }
         }
 
+        // Window List Clicks
         for (const item of this.renderedWindows) {
             if (x >= item.x && x <= item.x + item.w && y >= item.y && y <= item.y + item.h) {
                 if (item.win.id === this.windowManager.activeWindowId && !item.win.isMinimized) {
@@ -170,6 +250,22 @@ export class Desktop {
     }
 
     render(ctx, canvasWidth, canvasHeight) {
+
+        const drivers = fs.sys.find("drivers");
+        const hasDisplayDriver = drivers && drivers.find("display.sys");
+
+        if (!hasDisplayDriver) {
+            // Driver missing: Render pure black
+            ctx.fillStyle = "#000000";
+            ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+
+            ctx.fillStyle = "#ffffff";
+            ctx.font = "16px monospace";
+            ctx.textAlign = "center";
+            ctx.fillText("No Signal - Display Driver Not Found", canvasWidth/2, canvasHeight/2);
+            return; // Don't render icons or taskbar
+        }
+
         const colors = themeManager.get();
 
         if (this.wallpaperLoaded) {
@@ -233,6 +329,8 @@ export class Desktop {
         const tr = this.taskbarRect;
         const isHorizontal = (this.taskbarPosition === 'top' || this.taskbarPosition === 'bottom');
 
+        const startSize = 40;
+
         ctx.save();
         ctx.fillStyle = colors.taskbarBg;
         ctx.fillRect(tr.x, tr.y, tr.w, tr.h);
@@ -244,10 +342,18 @@ export class Desktop {
         if (this.taskbarPosition === 'left') ctx.strokeRect(tr.x + tr.w, tr.y, 0, tr.h);
         if (this.taskbarPosition === 'right') ctx.strokeRect(tr.x, tr.y, 0, tr.h);
 
+        // Start Button
         ctx.fillStyle = colors.highlight;
-        const startSize = 36;
         if (isHorizontal) ctx.fillRect(tr.x + 2, tr.y + 2, startSize, tr.h - 4);
-        else ctx.fillRect(tr.x + 2, tr.y + 2, tr.w - 4, startSize);
+
+        // Draw Logo
+        ctx.fillStyle = "#000";
+        ctx.font = "bold 18px monospace";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        const btnCx = tr.x + 2 + startSize/2;
+        const btnCy = tr.y + 2 + (tr.h-4)/2;
+        ctx.fillText("c", btnCx, btnCy);
 
         this.renderedWindows = [];
         if (this.windowManager) {
@@ -293,31 +399,47 @@ export class Desktop {
             }
         }
 
-        // Draw Custom Panel (Clock, Stress, etc.)
+        // Draw Custom Panel
         if (isHorizontal) {
             if (this.customPanelRenderer) {
                 this.customPanelRenderer(ctx, tr.w, tr.h, this.taskbarSize);
             }
 
-            const wifiX = tr.w - 85;
-            const wifiY = (this.taskbarPosition === 'bottom') ? tr.y + tr.h/2 : tr.y + tr.h/2;
+            const centerY = tr.y + tr.h/2;
+            const rightEdge = tr.x + tr.w;
+
+            // --- WIFI ICON ---
+            const wifiX = rightEdge - 85;
+            ctx.fillStyle = "#ffffff";
+            ctx.beginPath(); ctx.arc(wifiX, centerY + 4, 2, 0, Math.PI*2); ctx.fill();
+            ctx.strokeStyle = "#ffffff"; ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.arc(wifiX, centerY + 4, 6, Math.PI * 1.25, Math.PI * 1.75); ctx.stroke();
+            const net = this.networkManager.getConnectedNetwork();
+            if (net) { ctx.beginPath(); ctx.arc(wifiX, centerY + 4, 10, Math.PI * 1.25, Math.PI * 1.75); ctx.stroke(); }
+
+            // --- BELL ICON ---
+            const bellX = rightEdge - 25;
+            const bellY = centerY;
 
             ctx.fillStyle = "#ffffff";
             ctx.beginPath();
-            ctx.arc(wifiX, wifiY + 2, 2, 0, Math.PI*2); // Dot
+            ctx.arc(bellX, bellY - 2, 6, Math.PI, 0);
+            ctx.lineTo(bellX + 8, bellY + 6);
+            ctx.lineTo(bellX - 8, bellY + 6);
             ctx.fill();
+            ctx.beginPath(); ctx.arc(bellX, bellY + 6, 2, 0, Math.PI*2); ctx.fill();
 
-            ctx.strokeStyle = "#ffffff";
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.arc(wifiX, wifiY + 2, 6, Math.PI * 1.25, Math.PI * 1.75); // Small arc
-            ctx.stroke();
+            // Notification Badge
+            const count = notificationManager.getUnreadCount();
+            if (count > 0) {
+                ctx.fillStyle = "#ff4444";
+                ctx.beginPath(); ctx.arc(bellX + 6, bellY - 6, 4, 0, Math.PI*2); ctx.fill();
+            }
 
-            const net = this.networkManager.getConnectedNetwork();
-            if (net) {
-                ctx.beginPath();
-                ctx.arc(wifiX, wifiY + 2, 10, Math.PI * 1.25, Math.PI * 1.75); // Big arc
-                ctx.stroke();
+            // Focus Assist Badge
+            if (notificationManager.doNotDisturb) {
+                ctx.fillStyle = "#000"; // Cutout
+                ctx.beginPath(); ctx.arc(bellX + 2, bellY + 2, 3, 0, Math.PI*2); ctx.fill();
             }
         }
         ctx.restore();

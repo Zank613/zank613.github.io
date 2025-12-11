@@ -1,4 +1,6 @@
 import { themeManager } from "./theme.js";
+import {state} from "../state.js";
+import { audioManager } from "./audioManager.js";
 
 export class WindowManager {
     constructor() {
@@ -164,6 +166,9 @@ export class WindowManager {
             const inTitle = inRect && y <= win.y + win.titleBarHeight;
 
             if (edge || inRect) {
+
+                audioManager.playClick();
+
                 this.focusWindow(win.id);
 
                 if (edge) {
@@ -258,9 +263,65 @@ export class WindowManager {
 
     handleKey(e) {
         const win = this.windows.find(w => w.id === this.activeWindowId);
-        if (win && win.appInstance && win.appInstance.handleKey) {
-            win.appInstance.handleKey(e);
+        if (!win || !win.appInstance) return;
+
+        const app = win.appInstance;
+
+        // --- COPY (Ctrl + C) ---
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'c') {
+            const content = app.onCopy();
+            if (content) {
+                state.clipboard = content;
+                console.log("Copied to clipboard:", content);
+            }
+            e.preventDefault(); // Stop browser from trying to copy
+            return;
         }
+
+        // --- PASTE (Ctrl + V) ---
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'v') {
+            if (state.clipboard) {
+                app.onPaste(state.clipboard);
+            }
+            e.preventDefault();
+            return;
+        }
+
+        // Pass normal keys to app
+        if (app.handleKey) {
+            app.handleKey(e);
+        }
+    }
+
+    handleRightClick(x, y) {
+        // Check windows from top to bottom
+        for (let i = this.windows.length - 1; i >= 0; i--) {
+            const win = this.windows[i];
+            if (win.isMinimized) continue;
+
+            const contentRect = this._getContentRect(win);
+
+            // Check if inside window content area
+            if (x >= contentRect.x && x <= contentRect.x + contentRect.width &&
+                y >= contentRect.y && y <= contentRect.y + contentRect.height) {
+
+                // Focus the window first
+                this.focusWindow(win.id);
+
+                // Pass to App
+                if (win.appInstance && win.appInstance.handleRightClick) {
+                    const localCoords = win.appInstance.getLocalCoords(x, y, contentRect);
+                    return win.appInstance.handleRightClick(x, y, localCoords.x, localCoords.y);
+                }
+                return true; // Consumed click on window chrome, but no menu
+            }
+
+            // Check Title Bar
+            if (x >= win.x && x <= win.x + win.width && y >= win.y && y <= win.y + win.height) {
+                return true;
+            }
+        }
+        return false;
     }
 
     update(dt) {

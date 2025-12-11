@@ -117,6 +117,7 @@ export const state = {
         "taskman",
         "postman",
         "files",
+        "terminal"
     ],
 
     reputation: {
@@ -134,6 +135,19 @@ export const state = {
             timestamp: "Day 1 20:55"
         }
     ],
+
+    systemCrash: null,
+
+    clipboard: "",
+
+    // Boot & Login State
+    boot: {
+        phase: "BIOS", // BIOS, KERNEL, LOGIN, DESKTOP
+        startTime: Date.now(),
+        logs: [] // For BIOS text
+    },
+
+    currentUser: null, // Will be "user1351" after login
 };
 
 export function isAppInstalled(id) {
