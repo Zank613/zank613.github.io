@@ -383,5 +383,44 @@ export class BootScreen {
         ctx.textAlign = "center";
         ctx.font = "12px system-ui";
         ctx.fillText("Press TAB to switch, ENTER to login", cx, cy + 130);
+
+        this.drawStickyNote(ctx, w, h);
+    }
+
+    drawStickyNote(ctx, w, h) {
+        ctx.save();
+
+        // Position at bottom-right corner of the login box area
+        const noteX = w / 2 + 160;
+        const noteY = h / 2 + 20;
+
+        ctx.translate(noteX, noteY);
+        ctx.rotate(0.1);
+
+        // Shadow
+        ctx.fillStyle = "rgba(0,0,0,0.3)";
+        ctx.fillRect(5, 5, 120, 100);
+
+        // Paper
+        ctx.fillStyle = "#fef08a"; // Post-it yellow
+        ctx.fillRect(0, 0, 120, 100);
+
+        // Slightly darker top to simulate glue
+        ctx.fillStyle = "#fde047";
+        ctx.fillRect(0, 0, 120, 15);
+
+        // Text
+        ctx.fillStyle = "#000000";
+        // Attempt a handwritten style font
+        ctx.font = "14px 'Comic Sans MS', 'Chalkboard SE', sans-serif";
+        ctx.textAlign = "left";
+        ctx.textBaseline = "top";
+
+        ctx.fillText("Login Info:", 10, 25);
+        ctx.font = "bold 13px monospace";
+        ctx.fillText("U: user1351", 10, 50);
+        ctx.fillText("P: javascript", 10, 70);
+
+        ctx.restore();
     }
 }
