@@ -293,6 +293,22 @@ export class OneTerminal extends BaseApp {
         }
     }
 
+    getMemoryUsage() {
+        let mem = 10;
+        // Text history takes memory
+        mem += (this.lines.length * 0.05);
+        // Active hacking tools load libraries into memory
+        if (this.hackState.mode !== "IDLE") mem += 45;
+
+        return mem;
+    }
+
+    getCpuUsage() {
+        if (this.hackState.mode === "CRACKING") return 35.0 + Math.random() * 10; // Brute force is CPU intensive
+        if (this.hackState.mode === "CAPTURING") return 12.0 + Math.random() * 5;
+        return 0.5 + Math.random() * 0.5; // Idle
+    }
+
     formatBSSID(hex) { return hex.match(/.{1,2}/g).join(':'); }
     cmdLs() {
         if (!this.currentDir.children.length) { this.append("(empty)"); return; }

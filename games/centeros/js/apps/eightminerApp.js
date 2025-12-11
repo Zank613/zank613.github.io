@@ -18,6 +18,17 @@ export class EightminerApp extends BaseApp {
         }
     }
 
+    getMemoryUsage() {
+        // Mining DAG file simulation
+        return state.miner.running ? 850 : 20;
+    }
+
+    getCpuUsage() {
+        // Mining eats CPU
+        if (state.miner.running) return 90.0 + Math.random() * 10;
+        return 0.2;
+    }
+
     render(ctx, rect) {
         this.clear(ctx, rect, "#15171d");
         ctx.save();

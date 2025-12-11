@@ -11,6 +11,18 @@ export class BaseApp {
         this.windowManager = wm;
     }
 
+    // Returns Memory in MB
+    getMemoryUsage() {
+        // Base overhead for any GUI window (~15-20 MB) + slight fluctuation
+        return 15 + Math.random() * 2;
+    }
+
+    // Returns CPU in % (0.0 to 100.0)
+    getCpuUsage() {
+        // Idle background apps use very little CPU
+        return 0.1 + Math.random() * 0.3;
+    }
+
 
     // Default Copy behavior: Return null (nothing to copy)
     onCopy() {

@@ -219,6 +219,39 @@ export class BrowserApp extends BaseApp {
         tab.speedTestState.finalUpload = 0;
     }
 
+    getMemoryUsage() {
+        let mem = 60; // Heavy base engine overhead
+
+        // Each tab adds overhead
+        mem += this.tabs.length * 25;
+
+        // Active tab content adds memory
+        const active = this.activeTab;
+        if (active) {
+            // Convert loaded bytes to MB (approx) and multiply for DOM overhead
+            if (active.totalBytes) {
+                mem += (active.totalBytes / 1024 / 1024) * 8;
+            }
+            // SpeedTest buffers
+            if (active.speedTestState && active.speedTestState.running) {
+                mem += 150;
+            }
+        }
+
+        return mem + Math.random(); // Jitter
+    }
+
+    getCpuUsage() {
+        let cpu = 1.0; // Base browser idle
+        const active = this.activeTab;
+
+        if (active.loading) cpu += 15.0; // Parsing HTML is heavy
+        if (active.url === "speedtester.center" && active.speedTestState.running) cpu += 40.0; // JS heavy
+        if (active.secureStatus === "danger") cpu += 5.0; // Encryption overhead
+
+        return cpu + Math.random();
+    }
+
     handleFileSelected(fileId) {
         const tab = this.activeTab;
 
