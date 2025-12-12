@@ -99,7 +99,7 @@ appRegistry.register("notepad", {
     title: "Notepad",
     preferredSize: { width: 480, height: 320 },
     createInstance: (data) => new NotepadApp(data),
-    fileExtensions: ["txt", "log", "md", "js", "json", "sys", "html"]
+    fileExtensions: ["txt", "log", "md", "js", "json", "sys", "html", "src"]
 });
 appRegistry.register("miner", {
     title: "Eightminer",
@@ -172,7 +172,7 @@ appRegistry.register("files", {
 appRegistry.register("terminal", {
     title: "OneTerminal",
     preferredSize: { width: 680, height: 450 },
-    createInstance: () => new OneTerminal(),
+    createInstance: (data) => new OneTerminal(data),
     fileExtensions: ["cts", "ccts"]
 });
 
@@ -479,7 +479,7 @@ canvas.addEventListener("mousemove", (e) => {
     wm.pointerMove(x, y, canvas);
 });
 
-canvas.addEventListener("mouseup", () => {
+window.addEventListener("mouseup", () => {
     wm.pointerUp();
 });
 

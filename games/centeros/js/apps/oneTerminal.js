@@ -4,6 +4,7 @@ import { networkManager } from "../os/networkManager.js";
 import { getOfficerById } from "../world/caseWorld.js";
 import { fs } from "../os/fileSystem.js";
 import { ScriptSystem } from "../systems/scriptSystem.js";
+import { Compiler } from "../languages/compiler.js";
 
 export class OneTerminal extends BaseApp {
     constructor(data) {
@@ -141,6 +142,25 @@ export class OneTerminal extends BaseApp {
         const cmd = parts[0].toLowerCase();
         const args = parts.slice(1);
 
+        if (cmd === "csc") {
+            const filename = args[0];
+            if (!filename) { this.append("Usage: csc <filename.src>"); return; }
+            this.runCompiler(filename);
+            return;
+        }
+
+        // Check if the command matches a file in the current directory
+        const cleanName = cmd.replace(/^\.\//, ""); // Remove ./ prefix
+        const file = this.currentDir.children.find(f => f.name === cleanName);
+
+        if (file && (file.extension === "cts" || file.extension === "ccts")) {
+            this.runScript({
+                content: file.content,
+                filePath: this.currentDir.getPath() + "/" + file.name
+            });
+            return;
+        }
+
         switch (cmd) {
             case "help": this.showHelp(); break;
             case "clear": this.lines = []; this.scrollY = 0; break;
@@ -157,6 +177,33 @@ export class OneTerminal extends BaseApp {
             case "remote": this.cmdRemote(args); break;
             default: this.append(`bash: ${cmd}: command not found`);
         }
+    }
+
+    runCompiler(filename) {
+        const file = this.currentDir.children.find(f => f.name === filename);
+        if (!file) { this.append(`Error: Source file '${filename}' not found.`); return; }
+
+        this.append(`Compiling ${filename}...`);
+
+        const result = Compiler.compile(file.content);
+
+        if (!result.success) {
+            this.append("Compilation Failed:");
+            result.errors.forEach(e => this.append("  " + e));
+            return;
+        }
+
+        const binaryObj = { sig: "CENTER_EXE", bytecode: result.bytecode };
+        const binaryContent = JSON.stringify(binaryObj);
+
+        const newName = filename.replace(/\.(txt|src|js)$/, "") + ".cts";
+        const old = this.currentDir.children.find(f => f.name === newName);
+        if (old) this.currentDir.deleteChild(old.id);
+
+        this.currentDir.addFile(newName, binaryContent, "binary");
+
+        this.append(`Build successful: ${newName}`);
+        this.append(`Bytecode size: ${binaryContent.length} bytes`);
     }
 
     showHelp() {

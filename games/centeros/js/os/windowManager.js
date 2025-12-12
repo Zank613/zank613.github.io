@@ -10,7 +10,7 @@ export class WindowManager {
         this._dragState = null;
         this.minWidth = 200;
         this.minHeight = 150;
-        this.resizeHandleSize = 6;
+        this.resizeHandleSize = 4;
         this.workArea = { x: 0, y: 0, width: window.innerWidth, height: window.innerHeight };
     }
 

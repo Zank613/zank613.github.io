@@ -51,6 +51,28 @@ export class VirtualFolder {
         return folder;
     }
 
+    getFileById(id) {
+        const allFolders = [this.root, this.sys, this.home, this.desktop, this.documents, this.downloads, this.cases];
+
+        // Helper to search a folder tree
+        const search = (folder) => {
+            for (const child of folder.children) {
+                if (child.id === id) return child;
+                if (child.type === "folder") {
+                    const found = search(child);
+                    if (found) return found;
+                }
+            }
+            return null;
+        };
+
+        for (const folder of allFolders) {
+            const found = search(folder);
+            if (found) return found;
+        }
+        return null;
+    }
+
     ingest(node) {
         if (node.parent && node.parent.children) {
             node.parent.children = node.parent.children.filter(c => c.id !== node.id);

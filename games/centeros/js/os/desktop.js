@@ -5,6 +5,7 @@ import { notificationManager } from "./notificationManager.js";
 import { contextMenuManager } from "./contextMenuManager.js";
 import { startMenu } from "./startMenu.js";
 import { audioManager } from "./audioManager.js";
+import { appRegistry } from "./appRegistry.js";
 
 export class Desktop {
     constructor(networkManager, atmosphereManager) {
@@ -237,9 +238,16 @@ export class Desktop {
     }
 
     handleFileOpen(file) {
-        if (file.isEncrypted) {
-            this.openApp("notepad", { content: `LOCKED: ${file.originalType}` });
+        const assignedAppId = appRegistry.getAppIdForExtension(file.extension);
+
+        if (assignedAppId && isAppInstalled(assignedAppId)) {
+            this.openApp(assignedAppId, {
+                content: file.content,
+                fileId: file.id,
+                filePath: "desktop/" + file.name
+            });
         } else {
+            // Fallback to notepad
             this.openApp("notepad", { content: file.content });
         }
     }
