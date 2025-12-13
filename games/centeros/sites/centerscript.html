@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>CenterScript Wiki</title>
+</head>
+<body>
+<h1>CenterScript Documentation</h1>
+<p>
+    <b>CenterScript (.src)</b> is the standard automation language for CenterOS.
+    It allows users to write scripts that interact with system APIs, network interfaces, and file storage.
+</p>
+<p>
+    Scripts must be compiled using the <b>csc</b> command in the Terminal before execution.
+</p>
+
+<h2>1. Syntax Basics</h2>
+<p>
+    <b>Variables:</b><br>
+    <code>var x = 10;</code><br>
+    <code>var name = "User";</code>
+</p>
+<p>
+    <b>Logic:</b><br>
+    <code>if (x > 5) { print("Big"); } else { print("Small"); }</code>
+</p>
+<p>
+    <b>Loops:</b><br>
+    <code>while (x < 10) { x = x + 1; }</code>
+</p>
+
+<h2>2. System API</h2>
+<p>
+    <b>Console.print(msg)</b> - Output text to the terminal.<br>
+    <b>Console.input(prompt)</b> - Pause execution and get user input.<br>
+    <b>App.launch(appId)</b> - Open an application (e.g. "browser", "miner").<br>
+    <b>Sys.getHeat()</b> - Returns current police heat level (0-100).<br>
+    <b>Sys.time()</b> - Returns current time in minutes.<br>
+</p>
+
+<h2>3. Network API</h2>
+<p>
+    <b>Net.scan()</b> - Returns a comma-separated string of visible SSIDs.<br>
+    <b>Net.connect(ssid)</b> - Attempts to connect to a WiFi network.<br>
+</p>
+
+<h2>4. File API</h2>
+<p>
+    <b>File.read(filename)</b> - Returns content of a file from Documents/Desktop.<br>
+    <b>File.write(filename, content)</b> - Creates or overwrites a file.<br>
+    <b>File.exists(filename)</b> - Returns 1 (true) or 0 (false).<br>
+</p>
+
+<h2>5. Math & Helper API</h2>
+<p>
+    <b>Math.floor(x)</b>, <b>Math.round(x)</b>, <b>Math.random()</b><br>
+    <b>String.length(str)</b><br>
+</p>
+
+<h2>6. Examples</h2>
+<p><b>Auto-Miner Script:</b></p>
+<p>
+    <code>var heat = Sys.getHeat();</code><br>
+    <code>if (heat < 20) {</code><br>
+    <code>    print("Safe to mine.");</code><br>
+    <code>    App.launch("miner");</code><br>
+    <code>} else {</code><br>
+    <code>    print("Too hot!");</code><br>
+    <code>}</code>
+</p>
+
+<p>
+    <a href="home">Return to Home</a>
+</p>
+</body>
+</html>

@@ -16,7 +16,10 @@ const SITE_ROUTES = {
     "govservices.center": "sites/govservices.html",
     "speedtester.center": "sites/speedtester.html",
     "safecracker.w3": "sites/safecracker.html",
-    "decrypt.center": "sites/decryptcenter.html"
+    "decrypt.center": "sites/decryptcenter.html",
+    "center.script": "sites/centerscript.html",
+    "platycorp.net": "sites/platycorp.html",
+    "mybank.center": "sites/bank.html",
 };
 
 const DARK_SITES = new Set(["darkesttrench.w3", "safecracker.w3"]);
@@ -24,7 +27,10 @@ const SITE_RISK = {
     "home": 0.0, "center.center": 0.0, "pleasefindthem.com": 0.4,
     "darkesttrench.w3": 0.9, "safecracker.w3": 0.8,
     "anonboard.net": 0.6, "marketwatch.w3": 0.2, "govservices.center": 0.0,
-    "lifelog.net": 0.1, "speedtester.center": 0.0, "decrypt.center": 0.3
+    "lifelog.net": 0.1, "speedtester.center": 0.0, "decrypt.center": 0.3,
+    "center.script": 0.0,
+    "platycorp.net": 0.0,
+    "mybank.center": 0.0,
 };
 
 const PAGE_SIZES = {
@@ -33,7 +39,10 @@ const PAGE_SIZES = {
     "lifelog.net": 2.5 * 1024 * 1024, // 2.5 MB
     "darkesttrench.w3": 800 * 1024, // 800 KB
     "speedtester.center": 500 * 1024, // 500 KB
-    "default": 300 * 1024           // 300 KB average
+    "default": 300 * 1024,           // 300 KB average
+    "center.script": 120 * 1024,    // 120 KB
+    "platycorp.net": 600 * 1024,    // Images heavy
+    "mybank.center": 150 * 1024,
 };
 
 class BrowserTab {

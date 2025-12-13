@@ -2,12 +2,14 @@ import { state } from "../state.js";
 
 const SPAM_SUBJECTS = [
     "Enlarge your bandwidth!", "Hot singles in Sector 4", "E€E Investment Opportunity",
-    "You won a drone!", "CenterOS Security Alert", "Cheap VPNs NO LOGS"
+    "You won a drone!", "CenterOS Security Alert", "Cheap VPNs NO LOGS",
+    "RE: Your extended warranty", "URGENT: Inheritence Notification"
 ];
 
 const SPAM_BODIES = [
     "Click here to claim your prize.", "Limited time offer for new citizens.",
-    "We saw your browser history... buy our cleaner tool.", "Invest in crypto now!"
+    "We saw your browser history... buy our cleaner tool.", "Invest in crypto now!",
+    "Sultan of Ottoman Empire needs your help to move 50 million E€E."
 ];
 
 const THREAT_BODIES = [

@@ -44,7 +44,13 @@ export const LIFELOG_POSTS = [
     "My neighbor is so loud, I swear they are running a server farm.",
     "Just adopted a robo-dog. He bites.",
     "Why is coffee so expensive now?",
-    "Feeling watched today. Need a vacation."
+    "Feeling watched today. Need a vacation.",
+    "Saw a guy get arrested for jaywalking. Harsh.",
+    "Does anyone remember what stars look like?",
+    "My ration pack was open when I bought it. Disgusting.",
+    "OmniCorp stock is mooning again.",
+    "Hearing strange clicking sounds on my phone calls.",
+    "Sector 4 noodle bar is the best. Highly recommend."
 ];
 
 export const LIFELOG_SUSPICIOUS = [
@@ -296,37 +302,47 @@ export const EVIDENCE_SNIPPETS = {
         { id: "tx_money_002", tags: ["money", "night_activity"], template: "Meet me by the ATM after midnight, less cameras then." },
         { id: "tx_money_003", tags: ["money"], template: "Transfer didn't go through. Do not call the bank. Use the other app." },
         { id: "tx_crypto_001", tags: ["crypto", "money"], template: "Wallet address sent. 5k minimum. No clean coins." },
+        { id: "tx_money_004", tags: ["money", "deception"], template: "I told them it was a donation. They believed me. Easy money." },
 
         // NOISE / PARTY
         { id: "tx_noise_001", tags: ["noise", "alcohol"], template: "Party again tonight, man. Neighbours can cope." },
         { id: "tx_noise_002", tags: ["noise"], template: "Bro turn the bass down, the landlord just texted me." },
+        { id: "tx_noise_003", tags: ["noise", "alcohol"], template: "I'm so wasted. Where are you guys?" },
 
         // STALKING / OBSESSION
         { id: "tx_obsession_001", tags: ["obsession"], template: "She left work at 18:12 today, same bus as yesterday." },
         { id: "tx_obsession_002", tags: ["obsession", "photos"], template: "I think he saw me. Did you get the pictures?" },
         { id: "tx_obsession_003", tags: ["obsession"], template: "Why won't you answer me? I know you're home. I see the light." },
+        { id: "tx_obsession_004", tags: ["obsession"], template: "I found a spare key under the mat. I'm waiting inside." },
 
         // DRUGS
         { id: "tx_drug_001", tags: ["drugs", "money"], template: "Got the package. Quality is low but it'll sell." },
         { id: "tx_drug_002", tags: ["drugs"], template: "Can I get a 20? Usual spot." },
         { id: "tx_drug_003", tags: ["drugs", "phones"], template: "Burn this sim card after you read this. New number tomorrow." },
+        { id: "tx_drug_004", tags: ["drugs", "car"], template: "Load the trunk. We move the product at dawn." },
 
         // VIOLENCE / PANIC
         { id: "tx_violence_001", tags: ["violence", "anger"], template: "If he shows his face here again, I'm putting him in the hospital." },
         { id: "tx_violence_002", tags: ["violence", "injury"], template: "My hand is messed up. Think I broke a knuckle on his jaw." },
         { id: "tx_panic_001", tags: ["panic", "car"], template: "I didn't stop. I couldn't stop. I think I hit something bad." },
         { id: "tx_panic_002", tags: ["panic", "travel"], template: "Pack a bag. We need to leave the city tonight." },
+        { id: "tx_panic_003", tags: ["panic", "violence"], template: "They found the body. What do we do?" },
 
         // TECH / HACKING
         { id: "tx_tech_001", tags: ["hacking", "tech"], template: "Handshake captured. Cracking the hash now." },
         { id: "tx_tech_002", tags: ["tech", "privacy"], template: "The drone battery is dying, bring it back to the van." },
+        { id: "tx_tech_003", tags: ["hacking", "data"], template: "Database injected. Downloading the user table." },
 
         // NOISE (BENIGN)
         { id: "tx_norm_001", tags: ["noise"], template: "Hey, are we still on for dinner at 7?" },
         { id: "tx_norm_002", tags: ["noise"], template: "Can you pick up milk on the way home?" },
         { id: "tx_norm_003", tags: ["noise"], template: "Lol did you see that video?" },
         { id: "tx_norm_004", tags: ["noise"], template: "Happy birthday! Hope you have a great one." },
-        { id: "tx_norm_005", tags: ["noise"], template: "The meeting dragged on forever. Leaving now." }
+        { id: "tx_norm_005", tags: ["noise"], template: "The meeting dragged on forever. Leaving now." },
+        { id: "tx_norm_006", tags: ["noise"], template: "Did you feed the cat?" },
+        { id: "tx_norm_007", tags: ["noise"], template: "Traffic is terrible on Main St." },
+        { id: "tx_norm_008", tags: ["noise"], template: "ok" },
+        { id: "tx_norm_009", tags: ["noise"], template: "Call me when you can." }
     ],
 
     emails: [
@@ -340,15 +356,19 @@ export const EVIDENCE_SNIPPETS = {
 
         // DRUGS / DARK WEB
         { id: "em_drug_001", tags: ["drugs", "crypto"], subject: "Order #4492 Shipped", template: "Your package has been disguised as gardening supplies. Tracking ID attached." },
+        { id: "em_drug_002", tags: ["drugs"], subject: "Supplier issue", template: "The chem lab went silent. We need a new source." },
 
         // CORPORATE / WORK
         { id: "em_work_001", tags: ["money"], subject: "Overdue Invoice", template: "Final warning regarding the outstanding debt. Legal action will follow." },
         { id: "em_violence_001", tags: ["violence", "anger"], subject: "Stay away", template: "I am filing a restraining order. Stop contacting my family." },
+        { id: "em_work_002", tags: ["work"], subject: "Meeting Agenda", template: "Discussing Q3 projections. Attendance mandatory." },
 
         // NOISE (BENIGN)
         { id: "em_norm_001", tags: ["noise"], subject: "Utility Bill", template: "Your electricity bill for October is available to view." },
         { id: "em_norm_002", tags: ["noise"], subject: "Subscription", template: "Thank you for subscribing to CatFacts Daily." },
-        { id: "em_norm_003", tags: ["noise"], subject: "Weekend Plans", template: "Are we still going hiking on Saturday?" }
+        { id: "em_norm_003", tags: ["noise"], subject: "Weekend Plans", template: "Are we still going hiking on Saturday?" },
+        { id: "em_norm_004", tags: ["noise"], subject: "Recipe", template: "Here is that lasagna recipe you asked for." },
+        { id: "em_norm_005", tags: ["noise"], subject: "Delivery Confirmation", template: "Your package has been delivered to the lobby." }
     ],
 
     police_records: [
@@ -366,6 +386,7 @@ export const EVIDENCE_SNIPPETS = {
 
         // DRUGS
         { id: "pol_drug_001", tags: ["drugs"], template: "Vehicle searched during traffic stop. Paraphernalia found, but no substances. Released." },
+        { id: "pol_drug_002", tags: ["drugs"], template: "Subject matched description of local dealer. Stop and search negative." },
 
         // TRAFFIC
         { id: "pol_traffic_001", tags: ["alcohol"], template: "DUI checkpoint refusal. License suspended pending investigation." },

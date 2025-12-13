@@ -205,6 +205,15 @@ drivers.addFile("network.sys", "CenterMesh Network Driver", "text");
 drivers.addFile("centeraudio.sys", "CenterAudio Logic Driver v9.2\n[DIGITAL SIGNATURE VALID]", "system");
 fs.sys.addFile("boot.log", "[21:00:01] BOOT_SEQ_INIT... OK\n[21:00:02] CENTER_LINK... ESTABLISHED\n[21:00:03] USER_MONITOR... ACTIVE", "text");
 
+fs.documents.addFile(
+    "journal_fragment.ces",
+    "DAY 42: They are watching. I know it.\n" +
+    "The webcam light blinked twice yesterday when the room was empty.\n" +
+    "I found a process called 'Trespasser_D' running in the background.\n" +
+    "If you are reading this, wipe the drive. Run.",
+    "encrypted"
+);
+
 desktop.setWindowManager(wm);
 desktop.setTaskbarPosition("bottom");
 
